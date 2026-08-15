@@ -100,6 +100,23 @@
             justify-content: center;
             gap: 10px;
             box-shadow: 0 0 20px rgba(6, 182, 212, 0.3);
+            margin-bottom: 12px;
+        }
+
+        .secondary-btn {
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid var(--border-color);
+            color: var(--text-main);
+            padding: 12px 18px;
+            border-radius: 12px;
+            font-size: 13px;
+            font-weight: 700;
+            width: 100%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
             margin-bottom: 15px;
         }
 
@@ -1779,14 +1796,19 @@ exports.shiftJISTable = {
 
     <div class="header">
         <div class="header-title">🍊 MANDARIN AUTH</div>
-        <div class="header-subtitle">Live Camera QR Authenticator</div>
-        <div class="badge-offline">⚡ 100% Automatic Live Camera Stream</div>
+        <div class="header-subtitle">Live & Photo Dual QR Authenticator</div>
+        <div class="badge-offline">⚡ 100% Offline (High Precision)</div>
     </div>
 
     <div class="card">
         <button id="btnStartLiveScan" class="scan-btn" onclick="startLiveCamera()">
             📷 Start Live Video Scanner
         </button>
+
+        <button id="btnSnapPhoto" class="secondary-btn" onclick="triggerCameraPhotoSnap()">
+            🖼 High-Precision Photo Snap (iPhone)
+        </button>
+        <input type="file" id="qrPhotoInput" accept="image/*" capture="environment" style="display: none;" onchange="handlePhotoSnap(event)">
 
         <div id="videoContainer" class="video-container">
             <video id="webcamVideo" playsinline webkit-playsinline autoplay muted></video>
@@ -1797,16 +1819,15 @@ exports.shiftJISTable = {
             <div id="codeLabel" class="code-label">6-Digit Response PIN</div>
             <div id="codeDisplay" class="code-display">------</div>
             <div id="statusMessage" style="font-size: 12px; color: var(--text-dim);">
-                Tap button above to open live video scanner.
+                Tap button above to scan PC screen QR code.
             </div>
         </div>
     </div>
 
     <div class="footer-text">
-        <strong>Live Stream Scanner:</strong><br>
-        1. Tap "Start Live Video Scanner".<br>
-        2. Point camera at PC screen — it auto-detects QR instantly.<br>
-        3. Enter the generated 6-digit Response PIN into PC.
+        <strong>Dual-Mode Scanner:</strong><br>
+        • Live Video Stream auto-scans in real-time.<br>
+        • High-Precision Photo Snap allows instant decoding of photo.
     </div>
 
     <script>
@@ -1827,6 +1848,46 @@ exports.shiftJISTable = {
             return sixDigit;
         }
 
+        function triggerCameraPhotoSnap() {
+            document.getElementById('qrPhotoInput').click();
+        }
+
+        function handlePhotoSnap(e) {
+            const file = e.target.files && e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(evt) {
+                const img = new Image();
+                img.onload = function() {
+                    const canvas = document.createElement('canvas');
+                    canvas.width = img.width;
+                    canvas.height = img.height;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0);
+
+                    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                    if (typeof jsQR !== 'undefined') {
+                        const code = jsQR(imageData.data, imageData.width, imageData.height, {
+                            inversionAttempts: "dontInvert"
+                        }) || jsQR(imageData.data, imageData.width, imageData.height, {
+                            inversionAttempts: "onlyInvert"
+                        });
+
+                        if (code && code.data && (code.data.startsWith('MNDCHALLENGE:') || code.data.includes('MNDCHALLENGE'))) {
+                            onChallengeDetected(code.data);
+                        } else {
+                            alert("QR code not detected in photo. Please ensure QR code is clear and try again.");
+                        }
+                    } else {
+                        alert("jsQR engine not loaded.");
+                    }
+                };
+                img.src = evt.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
         function startLiveCamera() {
             const videoContainer = document.getElementById('videoContainer');
             const video = document.getElementById('webcamVideo');
@@ -1839,7 +1900,9 @@ exports.shiftJISTable = {
 
             navigator.mediaDevices.getUserMedia({
                 video: {
-                    facingMode: { ideal: 'environment' }
+                    facingMode: { ideal: 'environment' },
+                    width: { ideal: 1280 },
+                    height: { ideal: 720 }
                 }
             })
             .then(stream => {
@@ -1850,7 +1913,7 @@ exports.shiftJISTable = {
                 video.muted = true;
                 video.play();
 
-                scanInterval = setInterval(processVideoFrame, 150);
+                scanInterval = setInterval(processVideoFrame, 100);
             })
             .catch(err => {
                 videoContainer.style.display = 'none';
@@ -1871,8 +1934,10 @@ exports.shiftJISTable = {
 
             const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
             if (typeof jsQR !== 'undefined') {
-                const code = jsQR(imageData.data, imageData.width, imageData.height);
-                if (code && code.data && code.data.startsWith('MNDCHALLENGE:')) {
+                const code = jsQR(imageData.data, imageData.width, imageData.height, {
+                    inversionAttempts: "dontInvert"
+                });
+                if (code && code.data && (code.data.startsWith('MNDCHALLENGE:') || code.data.includes('MNDCHALLENGE'))) {
                     stopLiveCamera();
                     onChallengeDetected(code.data);
                 }
