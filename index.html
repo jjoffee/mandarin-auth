@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Mandarin Offline Authenticator</title>
-    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
     <style>
         :root {
             --bg-main: #0b0f19;
@@ -174,11 +173,12 @@
 
         .code-display {
             font-family: 'Courier New', Courier, monospace;
-            font-size: 42px;
+            font-size: 40px;
             font-weight: 900;
-            letter-spacing: 6px;
+            letter-spacing: 4px;
             color: var(--accent-cyan);
             margin: 10px 0;
+            text-transform: uppercase;
         }
 
         .code-display.stop-mode {
@@ -208,8 +208,20 @@
         }
     </style>
     <script>
-    if (typeof jsQR === 'undefined') {
-        window.jsQR = (function() {
+    
+var exports = undefined;
+var module = undefined;
+var define = undefined;
+(function webpackUniversalModuleDefinition(root, factory) {
+	if(typeof exports === 'object' && typeof module === 'object')
+		module.exports = factory();
+	else if(typeof define === 'function' && define.amd)
+		define([], factory);
+	else if(typeof exports === 'object')
+		exports["jsQR"] = factory();
+	else
+		root["jsQR"] = factory();
+})(typeof self !== 'undefined' ? self : this, function() {
 return /******/ (function(modules) { // webpackBootstrap
 /******/ 	// The module cache
 /******/ 	var installedModules = {};
@@ -1810,16 +1822,14 @@ exports.shiftJISTable = {
     
 
 
-})();
-    }
     </script>
 </head>
 <body>
 
     <div class="header">
         <div class="header-title">🍊 MANDARIN AUTH</div>
-        <div class="header-subtitle">Live Camera QR Authenticator</div>
-        <div class="badge-offline">⚡ High-Precision Live Scanner</div>
+        <div class="header-subtitle">Alphanumeric Security Authenticator</div>
+        <div class="badge-offline">⚡ 100% Offline Alphanumeric Protection</div>
     </div>
 
     <div class="card">
@@ -1839,7 +1849,7 @@ exports.shiftJISTable = {
         </div>
 
         <div class="result-box" id="resultBox">
-            <div id="codeLabel" class="code-label">6-Digit Response PIN</div>
+            <div id="codeLabel" class="code-label">Alphanumeric Response PIN</div>
             <div id="codeDisplay" class="code-display">------</div>
             <div id="statusMessage" style="font-size: 12px; color: var(--text-dim);">
                 Tap button above to start live scanner.
@@ -1852,7 +1862,7 @@ exports.shiftJISTable = {
         <strong>Operation Instructions:</strong><br>
         1. Tap "Start Live Video Scanner".<br>
         2. Point camera at PC monitor QR code inside dashed square.<br>
-        3. Enter generated 6-digit Response PIN into PC.
+        3. Enter generated Alphanumeric PIN (e.g. A8F-92B) into PC.
     </div>
 
     <script>
@@ -1868,7 +1878,7 @@ exports.shiftJISTable = {
             return null;
         }
 
-        function simpleHmacSha256(key, message) {
+        function generateAlphanumericCode(key, message) {
             let hash = 0;
             const combined = key + ":" + message;
             for (let i = 0; i < combined.length; i++) {
@@ -1876,9 +1886,14 @@ exports.shiftJISTable = {
                 hash = ((hash << 5) - hash) + char;
                 hash |= 0;
             }
-            const positiveHash = Math.abs(hash);
-            const sixDigit = String(100000 + (positiveHash % 900000));
-            return sixDigit;
+            let val = Math.abs(hash);
+            const charset = "0123456789ABCDEFGHJKLMNPQRSTUVWXYZ";
+            let code = "";
+            for (let i = 0; i < 6; i++) {
+                code += charset[val % charset.length];
+                val = Math.floor(val / charset.length) + (i + 1) * 7;
+            }
+            return code;
         }
 
         function triggerCameraPhotoSnap() {
@@ -2031,8 +2046,8 @@ exports.shiftJISTable = {
                 }
             }
 
-            const sixDigitCode = simpleHmacSha256(SECRET_KEY, mode + ":" + windowTime);
-            const formattedCode = sixDigitCode.substring(0, 3) + ' ' + sixDigitCode.substring(3);
+            const alphaCode = generateAlphanumericCode(SECRET_KEY, mode + ":" + windowTime);
+            const formattedCode = alphaCode.substring(0, 3) + '-' + alphaCode.substring(3);
 
             const codeDisp = document.getElementById('codeDisplay');
             const resultBox = document.getElementById('resultBox');
@@ -2041,7 +2056,7 @@ exports.shiftJISTable = {
             const debug = document.getElementById('debugStatus');
 
             codeDisp.innerText = formattedCode;
-            codeLabel.innerText = mode === 'DEV' ? 'Developer Unlock Response PIN' : 'Server Shutdown Response PIN';
+            codeLabel.innerText = mode === 'DEV' ? 'Developer Unlock Alphanumeric PIN' : 'Server Shutdown Alphanumeric PIN';
 
             if (mode === 'STOP') {
                 resultBox.className = 'result-box stop-mode';
@@ -2051,7 +2066,7 @@ exports.shiftJISTable = {
                 codeDisp.className = 'code-display';
             }
 
-            status.innerHTML = `<span style="color: var(--accent-green); font-weight: 800;">✔ Scanned Successfully! Enter this 6-digit Response PIN into PC.</span>`;
+            status.innerHTML = `<span style="color: var(--accent-green); font-weight: 800;">✔ Scanned! Enter this Alphanumeric PIN into PC.</span>`;
             debug.innerText = 'Scan Complete!';
 
             const btn = document.getElementById('btnStartLiveScan');
