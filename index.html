@@ -1811,8 +1811,8 @@ exports.shiftJISTable = {
 
     <div class="header">
         <div class="header-title">🍊 MANDARIN AUTH</div>
-        <div class="header-subtitle">Live Camera QR Authenticator</div>
-        <div class="badge-offline">⚡ 100% Offline Single-Button Scanner</div>
+        <div class="header-subtitle">High-Speed QR Authenticator</div>
+        <div class="badge-offline">⚡ Ultra-Fast 12.5 FPS Detection</div>
     </div>
 
     <div class="card">
@@ -1884,39 +1884,31 @@ exports.shiftJISTable = {
             btn.style.display = 'none';
             videoWrapper.style.display = 'block';
             status.innerText = 'Point camera at PC screen QR code...';
-            debug.innerText = 'Initializing camera...';
+            debug.innerText = 'Connecting camera...';
 
-            const constraintsList = [
-                { video: { facingMode: { exact: "environment" }, width: { ideal: 1280 }, height: { ideal: 720 } } },
-                { video: { facingMode: "environment" } },
-                { video: true }
-            ];
+            navigator.mediaDevices.getUserMedia({
+                video: { facingMode: "environment" }
+            })
+            .catch(function() {
+                return navigator.mediaDevices.getUserMedia({ video: true });
+            })
+            .then(function(stream) {
+                mediaStream = stream;
+                video.srcObject = stream;
+                video.setAttribute('playsinline', 'true');
+                video.setAttribute('webkit-playsinline', 'true');
+                video.muted = true;
+                video.play();
 
-            function tryStream(index) {
-                if (index >= constraintsList.length) {
-                    videoWrapper.style.display = 'none';
-                    btn.style.display = 'flex';
-                    status.innerHTML = `<span style="color: var(--accent-red); font-weight: bold;">Camera access denied. Please allow camera in Safari settings.</span>`;
-                    return;
-                }
-
-                navigator.mediaDevices.getUserMedia(constraintsList[index])
-                    .then(stream => {
-                        mediaStream = stream;
-                        video.srcObject = stream;
-                        video.setAttribute('playsinline', 'true');
-                        video.setAttribute('webkit-playsinline', 'true');
-                        video.muted = true;
-                        video.play();
-
-                        debug.innerText = 'Camera Active • Scanning frames...';
-                        frameCount = 0;
-                        scanInterval = setInterval(processVideoFrame, 120);
-                    })
-                    .catch(() => tryStream(index + 1));
-            }
-
-            tryStream(0);
+                debug.innerText = 'Camera Active • Scanning...';
+                frameCount = 0;
+                scanInterval = setInterval(processVideoFrame, 80);
+            })
+            .catch(function(err) {
+                videoWrapper.style.display = 'none';
+                btn.style.display = 'flex';
+                status.innerHTML = '<span style="color: var(--accent-red); font-weight: bold;">Camera error: ' + err.message + '</span>';
+            });
         }
 
         function processVideoFrame() {
@@ -1927,13 +1919,16 @@ exports.shiftJISTable = {
             if (!video || video.readyState !== video.HAVE_ENOUGH_DATA) return;
             if (!video.videoWidth || !video.videoHeight) return;
 
-            frameCount++;
-            if (frameCount % 10 === 0) {
-                debug.innerText = `Scanning frame #${frameCount} (${video.videoWidth}x${video.videoHeight})...`;
+            if (canvas.width !== video.videoWidth || canvas.height !== video.videoHeight) {
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
             }
 
-            canvas.width = video.videoWidth;
-            canvas.height = video.videoHeight;
+            frameCount++;
+            if (frameCount % 10 === 0) {
+                debug.innerText = 'Scanning live video (' + video.videoWidth + 'x' + video.videoHeight + ') #' + frameCount;
+            }
+
             const ctx = canvas.getContext('2d');
             ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
@@ -1941,21 +1936,13 @@ exports.shiftJISTable = {
             const engine = getScannerEngine();
 
             if (engine) {
-                let code = engine(imageData.data, imageData.width, imageData.height, {
-                    inversionAttempts: "dontInvert"
+                const code = engine(imageData.data, imageData.width, imageData.height, {
+                    inversionAttempts: "attemptBoth"
                 });
-                if (!code) {
-                    code = engine(imageData.data, imageData.width, imageData.height, {
-                        inversionAttempts: "onlyInvert"
-                    });
-                }
 
-                if (code && code.data) {
-                    debug.innerText = `QR Detected: ${code.data}`;
-                    if (code.data.startsWith('MNDCHALLENGE:') || code.data.includes('MNDCHALLENGE')) {
-                        stopLiveCamera();
-                        onChallengeDetected(code.data);
-                    }
+                if (code && code.data && code.data.indexOf('MNDCHALLENGE') !== -1) {
+                    stopLiveCamera();
+                    onChallengeDetected(code.data);
                 }
             }
         }
