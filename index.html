@@ -85,7 +85,7 @@
             margin: 15px 0;
         }
 
-        .secondary-btn {
+        .scan-btn {
             background: linear-gradient(135deg, var(--accent-cyan), #0284c7);
             border: none;
             color: #fff;
@@ -101,6 +101,24 @@
             gap: 10px;
             box-shadow: 0 0 20px rgba(6, 182, 212, 0.3);
             margin-bottom: 15px;
+        }
+
+        .video-container {
+            width: 100%;
+            height: 240px;
+            background: #000;
+            border-radius: 16px;
+            overflow: hidden;
+            border: 2px solid var(--accent-cyan);
+            display: none;
+            position: relative;
+            margin-bottom: 15px;
+        }
+
+        .video-container video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
         }
 
         .result-box {
@@ -1761,34 +1779,40 @@ exports.shiftJISTable = {
 
     <div class="header">
         <div class="header-title">🍊 MANDARIN AUTH</div>
-        <div class="header-subtitle">Air-Gapped Offline Authenticator</div>
-        <div class="badge-offline">⚡ 100% Offline (iPhone Ready)</div>
+        <div class="header-subtitle">Live Camera QR Authenticator</div>
+        <div class="badge-offline">⚡ 100% Automatic Live Camera Stream</div>
     </div>
 
     <div class="card">
-        <button id="btnSnapPhoto" class="secondary-btn" onclick="triggerCameraPhotoSnap()">
-            📷 Scan / Snap Photo of PC Screen QR
+        <button id="btnStartLiveScan" class="scan-btn" onclick="startLiveCamera()">
+            📷 Start Live Video Scanner
         </button>
-        <input type="file" id="qrPhotoInput" accept="image/*" capture="environment" style="display: none;" onchange="handlePhotoSnap(event)">
+
+        <div id="videoContainer" class="video-container">
+            <video id="webcamVideo" playsinline webkit-playsinline autoplay muted></video>
+            <canvas id="scanCanvas" style="display: none;"></canvas>
+        </div>
 
         <div class="result-box" id="resultBox">
             <div id="codeLabel" class="code-label">6-Digit Response PIN</div>
             <div id="codeDisplay" class="code-display">------</div>
             <div id="statusMessage" style="font-size: 12px; color: var(--text-dim);">
-                Tap button above to scan PC screen QR code.
+                Tap button above to open live video scanner.
             </div>
         </div>
     </div>
 
     <div class="footer-text">
-        <strong>Offline Operation:</strong><br>
-        1. Tap button and snap photo of QR code on PC.<br>
-        2. Web app decodes QR and shows 6-digit Response PIN.<br>
-        3. Enter this PIN into the PC.
+        <strong>Live Stream Scanner:</strong><br>
+        1. Tap "Start Live Video Scanner".<br>
+        2. Point camera at PC screen — it auto-detects QR instantly.<br>
+        3. Enter the generated 6-digit Response PIN into PC.
     </div>
 
     <script>
         const SECRET_KEY = "MANDARIN_AIRGAPPED_MASTER_SECRET_2026";
+        let mediaStream = null;
+        let scanInterval = null;
 
         function simpleHmacSha256(key, message) {
             let hash = 0;
@@ -1803,39 +1827,66 @@ exports.shiftJISTable = {
             return sixDigit;
         }
 
-        function triggerCameraPhotoSnap() {
-            document.getElementById('qrPhotoInput').click();
+        function startLiveCamera() {
+            const videoContainer = document.getElementById('videoContainer');
+            const video = document.getElementById('webcamVideo');
+            const btn = document.getElementById('btnStartLiveScan');
+            const status = document.getElementById('statusMessage');
+
+            btn.style.display = 'none';
+            videoContainer.style.display = 'block';
+            status.innerText = 'Searching for QR code on PC screen in real-time...';
+
+            navigator.mediaDevices.getUserMedia({
+                video: {
+                    facingMode: { ideal: 'environment' }
+                }
+            })
+            .then(stream => {
+                mediaStream = stream;
+                video.srcObject = stream;
+                video.setAttribute('playsinline', 'true');
+                video.setAttribute('webkit-playsinline', 'true');
+                video.muted = true;
+                video.play();
+
+                scanInterval = setInterval(processVideoFrame, 150);
+            })
+            .catch(err => {
+                videoContainer.style.display = 'none';
+                btn.style.display = 'flex';
+                status.innerHTML = `<span style="color: var(--accent-red); font-weight: bold;">Camera permission error: ${err.message}. Please allow camera access in Safari settings.</span>`;
+            });
         }
 
-        function handlePhotoSnap(e) {
-            const file = e.target.files && e.target.files[0];
-            if (!file) return;
+        function processVideoFrame() {
+            const video = document.getElementById('webcamVideo');
+            const canvas = document.getElementById('scanCanvas');
+            if (!video || video.readyState !== video.HAVE_ENOUGH_DATA) return;
 
-            const reader = new FileReader();
-            reader.onload = function(evt) {
-                const img = new Image();
-                img.onload = function() {
-                    const canvas = document.createElement('canvas');
-                    canvas.width = img.width;
-                    canvas.height = img.height;
-                    const ctx = canvas.getContext('2d');
-                    ctx.drawImage(img, 0, 0);
+            const ctx = canvas.getContext('2d');
+            canvas.height = video.videoHeight;
+            canvas.width = video.videoWidth;
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-                    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-                    if (typeof jsQR !== 'undefined') {
-                        const code = jsQR(imageData.data, imageData.width, imageData.height);
-                        if (code && code.data && code.data.startsWith('MNDCHALLENGE:')) {
-                            onChallengeDetected(code.data);
-                        } else {
-                            alert("QR code not detected in photo. Please ensure QR code is clear and try again.");
-                        }
-                    } else {
-                        alert("jsQR engine not loaded.");
-                    }
-                };
-                img.src = evt.target.result;
-            };
-            reader.readAsDataURL(file);
+            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            if (typeof jsQR !== 'undefined') {
+                const code = jsQR(imageData.data, imageData.width, imageData.height);
+                if (code && code.data && code.data.startsWith('MNDCHALLENGE:')) {
+                    stopLiveCamera();
+                    onChallengeDetected(code.data);
+                }
+            }
+        }
+
+        function stopLiveCamera() {
+            const videoContainer = document.getElementById('videoContainer');
+            if (videoContainer) videoContainer.style.display = 'none';
+            if (scanInterval) { clearInterval(scanInterval); scanInterval = null; }
+            if (mediaStream) {
+                mediaStream.getTracks().forEach(t => t.stop());
+                mediaStream = null;
+            }
         }
 
         function onChallengeDetected(challengePayload) {
@@ -1862,7 +1913,11 @@ exports.shiftJISTable = {
                 codeDisp.className = 'code-display';
             }
 
-            status.innerHTML = `<span style="color: var(--accent-green); font-weight: 800;">✔ Scanned! Enter this 6-digit Response PIN into PC.</span>`;
+            status.innerHTML = `<span style="color: var(--accent-green); font-weight: 800;">✔ Scanned automatically! Enter this 6-digit Response PIN into PC.</span>`;
+
+            const btn = document.getElementById('btnStartLiveScan');
+            btn.style.display = 'flex';
+            btn.innerHTML = '📷 Scan Next QR Code';
         }
     </script>
 </body>
