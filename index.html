@@ -2,205 +2,804 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Mandarin Offline Authenticator</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>Mandarin Auth</title>
     <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
     <style>
-        :root {
-            --bg-main: #0b0f19;
-            --bg-card: #151c2c;
-            --accent-cyan: #06b6d4;
-            --accent-red: #ef4444;
-            --accent-green: #10b981;
-            --text-main: #f8fafc;
-            --text-dim: #94a3b8;
-            --border-color: rgba(255, 255, 255, 0.1);
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            -webkit-tap-highlight-color: transparent;
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', sans-serif;
         }
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
-        body { background: var(--bg-main); color: var(--text-main); min-height: 100vh; display: flex; flex-direction: column; align-items: center; padding: 20px; gap: 15px; }
-        .header { text-align: center; margin-top: 10px; }
-        .header-title { font-size: 22px; font-weight: 800; color: var(--accent-cyan); }
-        .card { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 20px; padding: 20px; width: 100%; max-width: 360px; display: flex; flex-direction: column; align-items: center; gap: 12px; }
-        .scan-btn { background: linear-gradient(135deg, var(--accent-cyan), #0284c7); border: none; color: #fff; padding: 16px; border-radius: 14px; font-size: 16px; font-weight: 800; width: 100%; cursor: pointer; }
-        .video-wrapper { position: relative; width: 100%; height: 260px; background: #000; border-radius: 14px; overflow: hidden; border: 2px solid var(--accent-cyan); display: none; }
-        .video-wrapper video { width: 100%; height: 100%; object-fit: cover; }
-        .scan-corner { position: absolute; width: 40px; height: 40px; border-color: var(--accent-cyan); border-style: solid; }
-        .scan-corner.tl { top: 20px; left: 20px; border-width: 3px 0 0 3px; }
-        .scan-corner.tr { top: 20px; right: 20px; border-width: 3px 3px 0 0; }
-        .scan-corner.bl { bottom: 20px; left: 20px; border-width: 0 0 3px 3px; }
-        .scan-corner.br { bottom: 20px; right: 20px; border-width: 0 3px 3px 0; }
-        .result-box { background: rgba(0,0,0,0.5); border: 2px solid var(--accent-cyan); border-radius: 14px; padding: 18px; width: 100%; text-align: center; }
-        .result-box.stop-mode { border-color: var(--accent-red); }
-        .code-label { font-size: 10px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; }
-        .code-display { font-family: 'Courier New', monospace; font-size: 42px; font-weight: 900; letter-spacing: 5px; color: var(--accent-cyan); }
-        .code-display.stop-mode { color: var(--accent-red); }
-        .status-msg { font-size: 12px; color: var(--text-dim); margin-top: 6px; }
-        .log-box { background: rgba(0,0,0,0.7); border: 1px solid var(--border-color); border-radius: 10px; padding: 10px; width: 100%; max-width: 360px; font-size: 10px; color: #06b6d4; font-family: monospace; max-height: 120px; overflow-y: auto; }
+
+        :root {
+            --bg: #060a14;
+            --surface: #0d1425;
+            --surface2: #121a30;
+            --cyan: #00d4ff;
+            --cyan-dim: rgba(0, 212, 255, 0.15);
+            --cyan-glow: rgba(0, 212, 255, 0.3);
+            --green: #00e5a0;
+            --green-dim: rgba(0, 229, 160, 0.12);
+            --red: #ff4757;
+            --red-dim: rgba(255, 71, 87, 0.12);
+            --text: #f0f6ff;
+            --text-dim: #6b7fa3;
+            --text-muted: #3a4a6b;
+            --border: rgba(255,255,255,0.06);
+            --safe-top: env(safe-area-inset-top, 20px);
+            --safe-bottom: env(safe-area-inset-bottom, 20px);
+        }
+
+        html, body {
+            width: 100%;
+            min-height: 100vh;
+            min-height: 100dvh;
+            background: var(--bg);
+            color: var(--text);
+            overflow-x: hidden;
+        }
+
+        body {
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            min-height: 100dvh;
+            padding-top: var(--safe-top);
+            padding-bottom: var(--safe-bottom);
+        }
+
+        /* ── Ambient background ── */
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background:
+                radial-gradient(ellipse 60% 40% at 20% 0%, rgba(0,212,255,0.07) 0%, transparent 60%),
+                radial-gradient(ellipse 50% 35% at 80% 100%, rgba(0,229,160,0.05) 0%, transparent 60%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .page-content {
+            position: relative;
+            z-index: 1;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 16px 16px 24px;
+            gap: 16px;
+            max-width: 480px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        /* ── Header ── */
+        .app-header {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 4px 0;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .brand-icon {
+            width: 38px;
+            height: 38px;
+            background: linear-gradient(135deg, var(--cyan), #0077ff);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            box-shadow: 0 4px 14px rgba(0,212,255,0.3);
+        }
+
+        .brand-text {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .brand-name {
+            font-size: 15px;
+            font-weight: 800;
+            color: var(--text);
+            letter-spacing: 0.5px;
+        }
+
+        .brand-sub {
+            font-size: 10px;
+            color: var(--text-dim);
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        .status-pill {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            background: var(--green-dim);
+            border: 1px solid rgba(0,229,160,0.2);
+            border-radius: 20px;
+            padding: 5px 10px;
+            font-size: 10px;
+            font-weight: 700;
+            color: var(--green);
+            letter-spacing: 0.5px;
+        }
+
+        .status-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--green);
+            animation: blink 2s infinite;
+        }
+
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+
+        /* ── Scan card ── */
+        .scan-card {
+            width: 100%;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 24px;
+            overflow: hidden;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+        }
+
+        /* ── Video area ── */
+        .video-section {
+            position: relative;
+            width: 100%;
+            aspect-ratio: 1 / 1;
+            background: #000;
+            display: none;
+        }
+
+        .video-section.active {
+            display: block;
+        }
+
+        #webcamVideo {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+
+        /* Corners viewfinder */
+        .vf-overlay {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .vf-frame {
+            position: relative;
+            width: 65%;
+            aspect-ratio: 1;
+        }
+
+        .vf-corner {
+            position: absolute;
+            width: 22px;
+            height: 22px;
+            border-color: var(--cyan);
+            border-style: solid;
+        }
+
+        .vf-corner.tl { top: 0; left: 0; border-width: 2.5px 0 0 2.5px; border-radius: 4px 0 0 0; }
+        .vf-corner.tr { top: 0; right: 0; border-width: 2.5px 2.5px 0 0; border-radius: 0 4px 0 0; }
+        .vf-corner.bl { bottom: 0; left: 0; border-width: 0 0 2.5px 2.5px; border-radius: 0 0 0 4px; }
+        .vf-corner.br { bottom: 0; right: 0; border-width: 0 2.5px 2.5px 0; border-radius: 0 0 4px 0; }
+
+        .vf-scan-line {
+            position: absolute;
+            left: 4px;
+            right: 4px;
+            height: 1.5px;
+            background: linear-gradient(90deg, transparent, var(--cyan), transparent);
+            animation: scanLine 2s infinite ease-in-out;
+            top: 0;
+        }
+
+        @keyframes scanLine {
+            0% { top: 4px; opacity: 1; }
+            90% { top: calc(100% - 4px); opacity: 1; }
+            100% { top: calc(100% - 4px); opacity: 0; }
+        }
+
+        .vf-bg {
+            position: absolute;
+            inset: 0;
+            background: rgba(0,0,0,0.45);
+        }
+
+        .vf-window {
+            position: absolute;
+            inset: 0;
+            clip-path: polygon(
+                0% 0%, 100% 0%, 100% 100%, 0% 100%,
+                0% 17.5%, 17.5% 17.5%, 17.5% 82.5%, 82.5% 82.5%, 82.5% 17.5%, 17.5% 17.5%,
+                0% 17.5%
+            );
+        }
+
+        /* Live indicator */
+        .live-badge {
+            position: absolute;
+            top: 12px;
+            left: 12px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            background: rgba(0,0,0,0.6);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 20px;
+            padding: 4px 10px;
+            font-size: 10px;
+            font-weight: 700;
+            color: var(--red);
+            letter-spacing: 0.5px;
+        }
+
+        .live-dot {
+            width: 5px;
+            height: 5px;
+            border-radius: 50%;
+            background: var(--red);
+            animation: blink 1s infinite;
+        }
+
+        /* Frame counter */
+        .frame-badge {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            background: rgba(0,0,0,0.6);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 8px;
+            padding: 4px 8px;
+            font-size: 9px;
+            font-family: 'SF Mono', 'Fira Code', monospace;
+            color: var(--text-dim);
+        }
+
+        /* ── Idle state ── */
+        .idle-section {
+            padding: 36px 24px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .idle-icon-wrap {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: var(--cyan-dim);
+            border: 1px solid rgba(0,212,255,0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 36px;
+            animation: idlePulse 3s infinite ease-in-out;
+        }
+
+        @keyframes idlePulse {
+            0%, 100% { box-shadow: 0 0 0 0 var(--cyan-glow); }
+            50% { box-shadow: 0 0 0 16px transparent; }
+        }
+
+        .idle-text {
+            text-align: center;
+        }
+
+        .idle-title {
+            font-size: 17px;
+            font-weight: 700;
+            color: var(--text);
+            margin-bottom: 6px;
+        }
+
+        .idle-subtitle {
+            font-size: 13px;
+            color: var(--text-dim);
+            line-height: 1.5;
+        }
+
+        /* ── Scan button ── */
+        .scan-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            width: calc(100% - 32px);
+            margin: 0 16px 20px;
+            padding: 16px;
+            background: linear-gradient(135deg, #00d4ff, #0066ee);
+            border: none;
+            border-radius: 16px;
+            color: #fff;
+            font-size: 16px;
+            font-weight: 800;
+            letter-spacing: 0.3px;
+            cursor: pointer;
+            box-shadow: 0 6px 24px rgba(0,212,255,0.3);
+            transition: transform 0.15s, box-shadow 0.15s;
+            -webkit-appearance: none;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .scan-btn::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(180deg, rgba(255,255,255,0.12) 0%, transparent 50%);
+            pointer-events: none;
+        }
+
+        .scan-btn:active {
+            transform: scale(0.97);
+            box-shadow: 0 2px 12px rgba(0,212,255,0.2);
+        }
+
+        .scan-btn.hidden { display: none; }
+
+        .btn-icon { font-size: 20px; }
+
+        /* ── Result card ── */
+        .result-card {
+            width: 100%;
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            border-radius: 24px;
+            overflow: hidden;
+        }
+
+        .result-inner {
+            padding: 24px 20px;
+            text-align: center;
+        }
+
+        .result-label {
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            color: var(--text-dim);
+            margin-bottom: 12px;
+        }
+
+        .code-wrap {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            margin-bottom: 14px;
+        }
+
+        .code-group {
+            font-family: 'SF Mono', 'Fira Code', 'Courier New', monospace;
+            font-size: 38px;
+            font-weight: 900;
+            letter-spacing: 4px;
+            color: var(--cyan);
+            background: rgba(0,212,255,0.06);
+            border: 1px solid rgba(0,212,255,0.15);
+            border-radius: 12px;
+            padding: 10px 16px;
+            min-width: 100px;
+            transition: all 0.3s;
+        }
+
+        .code-sep {
+            font-size: 28px;
+            font-weight: 300;
+            color: var(--text-muted);
+        }
+
+        .code-group.stop-mode { color: var(--red); background: rgba(255,71,87,0.06); border-color: rgba(255,71,87,0.15); }
+
+        .result-status {
+            font-size: 13px;
+            color: var(--text-dim);
+            line-height: 1.5;
+        }
+
+        .result-status.success {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            color: var(--green);
+            font-weight: 700;
+        }
+
+        /* ── Log panel ── */
+        .log-panel {
+            width: 100%;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            overflow: hidden;
+        }
+
+        .log-header {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 10px 14px;
+            border-bottom: 1px solid var(--border);
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            color: var(--text-dim);
+        }
+
+        .log-header span.dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--cyan);
+            opacity: 0.6;
+        }
+
+        .log-body {
+            padding: 10px 14px;
+            font-size: 10.5px;
+            font-family: 'SF Mono', 'Fira Code', 'Courier New', monospace;
+            color: var(--text-dim);
+            max-height: 100px;
+            overflow-y: auto;
+            line-height: 1.8;
+            scrollbar-width: none;
+        }
+
+        .log-body::-webkit-scrollbar { display: none; }
+
+        .log-line.ok { color: var(--green); }
+        .log-line.err { color: var(--red); }
+        .log-line.info { color: var(--cyan); }
+        .log-line.dim { color: var(--text-muted); }
+
+        /* ── Footer instructions ── */
+        .instructions {
+            width: 100%;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+        }
+
+        .step {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 14px 10px;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .step-num {
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            background: var(--cyan-dim);
+            border: 1px solid rgba(0,212,255,0.2);
+            font-size: 11px;
+            font-weight: 800;
+            color: var(--cyan);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .step-text {
+            font-size: 10px;
+            color: var(--text-dim);
+            line-height: 1.4;
+        }
+
+        /* ── Responsive tweaks ── */
+        @media (max-width: 360px) {
+            .code-group { font-size: 30px; padding: 8px 12px; min-width: 80px; }
+            .idle-icon-wrap { width: 64px; height: 64px; font-size: 28px; }
+        }
+
+        @media (min-width: 480px) {
+            .page-content { padding: 24px 24px 32px; }
+        }
+
+        /* Success animation */
+        @keyframes successPop {
+            0% { transform: scale(0.8); opacity: 0; }
+            60% { transform: scale(1.05); }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        .animate-pop {
+            animation: successPop 0.4s ease forwards;
+        }
+
+        canvas { display: none; }
     </style>
 </head>
 <body>
+<div class="page-content">
 
-    <div class="header">
-        <div class="header-title">🍊 MANDARIN AUTH</div>
-        <div style="font-size:11px; color:var(--text-dim); margin-top:4px;">QR CODE AUTHENTICATOR</div>
-    </div>
+    <!-- Header -->
+    <header class="app-header">
+        <div class="brand">
+            <div class="brand-icon">🍊</div>
+            <div class="brand-text">
+                <div class="brand-name">MANDARIN</div>
+                <div class="brand-sub">AUTHENTICATOR</div>
+            </div>
+        </div>
+        <div class="status-pill">
+            <div class="status-dot"></div>
+            OFFLINE
+        </div>
+    </header>
 
-    <div class="card">
-        <button id="btnScan" class="scan-btn" onclick="startLiveCamera()">📷 Open Scanner</button>
+    <!-- Main scan card -->
+    <div class="scan-card" id="scanCard">
 
-        <div id="videoWrapper" class="video-wrapper">
+        <!-- Video scanner (hidden until active) -->
+        <div class="video-section" id="videoSection">
             <video id="webcamVideo" playsinline webkit-playsinline autoplay muted></video>
-            <canvas id="scanCanvas" style="display:none;"></canvas>
-            <div class="scan-corner tl"></div>
-            <div class="scan-corner tr"></div>
-            <div class="scan-corner bl"></div>
-            <div class="scan-corner br"></div>
+            <canvas id="scanCanvas"></canvas>
+
+            <div class="vf-bg"></div>
+            <div class="vf-overlay">
+                <div class="vf-frame">
+                    <div class="vf-scan-line"></div>
+                    <div class="vf-corner tl"></div>
+                    <div class="vf-corner tr"></div>
+                    <div class="vf-corner bl"></div>
+                    <div class="vf-corner br"></div>
+                </div>
+            </div>
+
+            <div class="live-badge">
+                <div class="live-dot"></div>
+                LIVE
+            </div>
+            <div class="frame-badge" id="frameBadge">0 fps</div>
         </div>
 
-        <div class="result-box" id="resultBox">
-            <div class="code-label" id="codeLabel">Alphanumeric Response PIN</div>
-            <div class="code-display" id="codeDisplay">------</div>
-            <div class="status-msg" id="statusMsg">Tap "Open Scanner" to begin.</div>
+        <!-- Idle state -->
+        <div class="idle-section" id="idleSection">
+            <div class="idle-icon-wrap">📷</div>
+            <div class="idle-text">
+                <div class="idle-title">Scan QR Code</div>
+                <div class="idle-subtitle">Point your camera at the QR code displayed on your PC screen</div>
+            </div>
+        </div>
+
+        <!-- Scan button -->
+        <button class="scan-btn" id="btnScan" onclick="startLiveCamera()">
+            <span class="btn-icon">📷</span>
+            <span id="btnText">Open Scanner</span>
+        </button>
+    </div>
+
+    <!-- Result card -->
+    <div class="result-card">
+        <div class="result-inner">
+            <div class="result-label" id="resultLabel">Response PIN</div>
+            <div class="code-wrap">
+                <div class="code-group" id="codeA">---</div>
+                <div class="code-sep">-</div>
+                <div class="code-group" id="codeB">---</div>
+            </div>
+            <div class="result-status" id="resultStatus">Awaiting scan…</div>
         </div>
     </div>
 
-    <div class="log-box" id="logBox">▶ System Ready<br></div>
+    <!-- Log panel -->
+    <div class="log-panel">
+        <div class="log-header">
+            <span class="dot"></span>
+            System Log
+        </div>
+        <div class="log-body" id="logBody">
+            <div class="log-line dim">▶ System initializing…</div>
+        </div>
+    </div>
 
-    <script>
-        const SECRET_KEY = "MANDARIN_AIRGAPPED_MASTER_SECRET_2026";
-        let mediaStream = null;
-        let scanInterval = null;
-        let frameCount = 0;
-        let engineReady = false;
+    <!-- Steps -->
+    <div class="instructions">
+        <div class="step">
+            <div class="step-num">1</div>
+            <div class="step-text">Tap Open Scanner</div>
+        </div>
+        <div class="step">
+            <div class="step-num">2</div>
+            <div class="step-text">Point at PC QR code</div>
+        </div>
+        <div class="step">
+            <div class="step-num">3</div>
+            <div class="step-text">Enter PIN on PC</div>
+        </div>
+    </div>
 
-        function log(msg) {
-            const lb = document.getElementById('logBox');
-            lb.innerHTML += msg + '<br>';
-            lb.scrollTop = lb.scrollHeight;
+</div>
+
+<script>
+    const SECRET_KEY = "MANDARIN_AIRGAPPED_MASTER_SECRET_2026";
+    let mediaStream = null;
+    let scanInterval = null;
+    let frameCount = 0;
+    let lastFrameTime = Date.now();
+
+    function log(msg, type = '') {
+        const lb = document.getElementById('logBody');
+        const line = document.createElement('div');
+        line.className = 'log-line ' + type;
+        line.textContent = msg;
+        lb.appendChild(line);
+        lb.scrollTop = lb.scrollHeight;
+    }
+
+    window.addEventListener('load', function() {
+        if (typeof jsQR === 'function') {
+            log('✅ jsQR engine loaded', 'ok');
+        } else {
+            log('❌ jsQR engine failed', 'err');
+        }
+    });
+
+    function generateAlphanumericCode(key, message) {
+        let hash = 0;
+        const combined = key + ":" + message;
+        for (let i = 0; i < combined.length; i++) {
+            hash = ((hash << 5) - hash) + combined.charCodeAt(i);
+            hash |= 0;
+        }
+        let val = Math.abs(hash);
+        const charset = "0123456789ABCDEFGHJKLMNPQRSTUVWXYZ";
+        let code = "";
+        for (let i = 0; i < 6; i++) {
+            code += charset[val % charset.length];
+            val = Math.floor(val / charset.length) + (i + 1) * 7;
+        }
+        return code;
+    }
+
+    function startLiveCamera() {
+        document.getElementById('btnScan').classList.add('hidden');
+        document.getElementById('idleSection').style.display = 'none';
+        document.getElementById('videoSection').classList.add('active');
+        document.getElementById('resultStatus').textContent = 'Scanning…';
+        log('▶ Opening camera…', 'info');
+
+        if (typeof jsQR !== 'function') {
+            log('❌ jsQR not available', 'err');
+            resetToIdle();
+            return;
         }
 
-        // Check engine on load
-        window.addEventListener('load', function() {
-            if (typeof jsQR === 'function') {
-                engineReady = true;
-                log('✅ jsQR engine loaded OK');
-            } else {
-                log('❌ jsQR engine FAILED to load');
-            }
-        });
+        navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
+            .catch(() => navigator.mediaDevices.getUserMedia({ video: true }))
+            .then(function(stream) {
+                mediaStream = stream;
+                const video = document.getElementById('webcamVideo');
+                video.srcObject = stream;
+                video.play();
+                frameCount = 0;
+                lastFrameTime = Date.now();
+                log('✅ Camera active', 'ok');
+                scanInterval = setInterval(processFrame, 80);
+            })
+            .catch(function(err) {
+                log('❌ Camera: ' + err.message, 'err');
+                resetToIdle();
+            });
+    }
 
-        function generateAlphanumericCode(key, message) {
-            let hash = 0;
-            const combined = key + ":" + message;
-            for (let i = 0; i < combined.length; i++) {
-                hash = ((hash << 5) - hash) + combined.charCodeAt(i);
-                hash |= 0;
-            }
-            let val = Math.abs(hash);
-            const charset = "0123456789ABCDEFGHJKLMNPQRSTUVWXYZ";
-            let code = "";
-            for (let i = 0; i < 6; i++) {
-                code += charset[val % charset.length];
-                val = Math.floor(val / charset.length) + (i + 1) * 7;
-            }
-            return code;
+    function processFrame() {
+        const video = document.getElementById('webcamVideo');
+        const canvas = document.getElementById('scanCanvas');
+        if (!video || video.readyState !== video.HAVE_ENOUGH_DATA || !video.videoWidth) return;
+
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(video, 0, 0);
+        const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+
+        frameCount++;
+        const now = Date.now();
+        if (now - lastFrameTime >= 1000) {
+            document.getElementById('frameBadge').textContent = frameCount + ' frames';
+            lastFrameTime = now;
         }
 
-        function startLiveCamera() {
-            document.getElementById('btnScan').style.display = 'none';
-            document.getElementById('videoWrapper').style.display = 'block';
-            document.getElementById('statusMsg').innerText = 'Point camera at QR code on PC screen...';
-
-            if (!engineReady) {
-                log('⚠️ jsQR not ready, checking again...');
-                engineReady = (typeof jsQR === 'function');
-                if (!engineReady) {
-                    log('❌ jsQR still not available. CDN may be blocked.');
-                    document.getElementById('statusMsg').innerHTML = '<span style="color:red">Scanner engine failed to load. Check internet connection.</span>';
-                    document.getElementById('btnScan').style.display = 'block';
-                    document.getElementById('videoWrapper').style.display = 'none';
-                    return;
-                }
-            }
-            log('▶ Opening camera...');
-
-            navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
-                .catch(() => navigator.mediaDevices.getUserMedia({ video: true }))
-                .then(function(stream) {
-                    mediaStream = stream;
-                    const video = document.getElementById('webcamVideo');
-                    video.srcObject = stream;
-                    video.play();
-                    frameCount = 0;
-                    log('✅ Camera started');
-                    scanInterval = setInterval(processFrame, 100);
-                })
-                .catch(function(err) {
-                    log('❌ Camera error: ' + err.message);
-                    document.getElementById('statusMsg').innerHTML = '<span style="color:red">Camera error: ' + err.message + '</span>';
-                    document.getElementById('btnScan').style.display = 'block';
-                    document.getElementById('videoWrapper').style.display = 'none';
-                });
+        const result = jsQR(imgData.data, imgData.width, imgData.height, { inversionAttempts: "attemptBoth" });
+        if (result && result.data) {
+            log('🎯 QR: ' + result.data.substring(0, 30), 'info');
+            stopCamera();
+            handleQR(result.data);
         }
+    }
 
-        function processFrame() {
-            const video = document.getElementById('webcamVideo');
-            const canvas = document.getElementById('scanCanvas');
-            if (!video || video.readyState !== video.HAVE_ENOUGH_DATA) return;
-            if (!video.videoWidth) return;
+    function stopCamera() {
+        clearInterval(scanInterval); scanInterval = null;
+        if (mediaStream) { mediaStream.getTracks().forEach(t => t.stop()); mediaStream = null; }
+        document.getElementById('videoSection').classList.remove('active');
+    }
 
-            canvas.width = video.videoWidth;
-            canvas.height = video.videoHeight;
-            const ctx = canvas.getContext('2d');
-            ctx.drawImage(video, 0, 0);
-            const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    function resetToIdle() {
+        stopCamera();
+        document.getElementById('idleSection').style.display = 'flex';
+        const btn = document.getElementById('btnScan');
+        btn.classList.remove('hidden');
+        document.getElementById('btnText').textContent = 'Open Scanner';
+    }
 
-            frameCount++;
-            if (frameCount % 20 === 0) log('📹 Frame ' + frameCount + ' (' + canvas.width + 'x' + canvas.height + ')');
+    function handleQR(payload) {
+        const parts = payload.split(':');
+        let mode = 'DEV';
+        let windowTime = Math.floor(Date.now() / 1000 / 30);
 
-            const result = jsQR(imgData.data, imgData.width, imgData.height, { inversionAttempts: "attemptBoth" });
-            if (result && result.data) {
-                log('🎯 QR RAW: ' + result.data);
-                stopCamera();
-                handleQR(result.data);
+        for (let i = 0; i < parts.length; i++) {
+            if (parts[i] === 'DEV' || parts[i] === 'STOP') {
+                mode = parts[i];
+                if (parts[i+1] && !isNaN(parts[i+1])) windowTime = parseInt(parts[i+1]);
+                break;
             }
         }
 
-        function stopCamera() {
-            clearInterval(scanInterval); scanInterval = null;
-            if (mediaStream) { mediaStream.getTracks().forEach(t => t.stop()); mediaStream = null; }
-            document.getElementById('videoWrapper').style.display = 'none';
-        }
+        const code = generateAlphanumericCode(SECRET_KEY, mode + ":" + windowTime);
+        const isStop = mode === 'STOP';
 
-        function handleQR(payload) {
-            const parts = payload.split(':');
-            let mode = 'DEV';
-            let windowTime = Math.floor(Date.now() / 1000 / 30);
+        const codeA = document.getElementById('codeA');
+        const codeB = document.getElementById('codeB');
+        codeA.textContent = code.substring(0, 3);
+        codeB.textContent = code.substring(3);
+        codeA.className = 'code-group animate-pop' + (isStop ? ' stop-mode' : '');
+        codeB.className = 'code-group animate-pop' + (isStop ? ' stop-mode' : '');
 
-            for (let i = 0; i < parts.length; i++) {
-                if (parts[i] === 'DEV' || parts[i] === 'STOP') {
-                    mode = parts[i];
-                    if (parts[i+1] && !isNaN(parts[i+1])) windowTime = parseInt(parts[i+1]);
-                    break;
-                }
-            }
+        document.getElementById('resultLabel').textContent = isStop ? '🔴 Shutdown PIN' : '🔵 Developer PIN';
 
-            log('🔑 Mode: ' + mode + ' | Window: ' + windowTime);
+        const status = document.getElementById('resultStatus');
+        status.className = 'result-status success';
+        status.innerHTML = '<span>✅</span><span>Enter this PIN on your PC</span>';
 
-            const code = generateAlphanumericCode(SECRET_KEY, mode + ":" + windowTime);
-            const fmt = code.substring(0, 3) + '-' + code.substring(3);
+        log('✅ PIN: ' + code.substring(0,3) + '-' + code.substring(3), 'ok');
 
-            document.getElementById('codeDisplay').innerText = fmt;
-            document.getElementById('codeLabel').innerText = mode === 'DEV' ? 'Developer Unlock PIN' : 'Server Shutdown PIN';
-            document.getElementById('resultBox').className = 'result-box' + (mode === 'STOP' ? ' stop-mode' : '');
-            document.getElementById('codeDisplay').className = 'code-display' + (mode === 'STOP' ? ' stop-mode' : '');
-            document.getElementById('statusMsg').innerHTML = '<span style="color:var(--accent-green); font-weight:800;">✔ Enter this PIN into PC!</span>';
-            log('✅ Generated PIN: ' + fmt);
-
-            const btn = document.getElementById('btnScan');
-            btn.style.display = 'block';
-            btn.innerText = '📷 Scan Again';
-        }
-    </script>
+        // Reset scan button
+        document.getElementById('idleSection').style.display = 'flex';
+        const btn = document.getElementById('btnScan');
+        btn.classList.remove('hidden');
+        document.getElementById('btnText').textContent = 'Scan Again';
+    }
+</script>
 </body>
 </html>
