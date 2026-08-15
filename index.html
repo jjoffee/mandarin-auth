@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Mandarin Offline Authenticator</title>
+    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
     <style>
         :root {
             --bg-main: #0b0f19;
@@ -74,7 +75,7 @@
             background: var(--bg-card);
             border: 1px solid var(--border-color);
             border-radius: 20px;
-            padding: 25px 20px;
+            padding: 20px;
             width: 100%;
             max-width: 340px;
             display: flex;
@@ -120,7 +121,8 @@
             margin-bottom: 15px;
         }
 
-        .video-container {
+        .video-wrapper {
+            position: relative;
             width: 100%;
             height: 240px;
             background: #000;
@@ -128,14 +130,33 @@
             overflow: hidden;
             border: 2px solid var(--accent-cyan);
             display: none;
-            position: relative;
             margin-bottom: 15px;
         }
 
-        .video-container video {
+        .video-wrapper video {
             width: 100%;
             height: 100%;
             object-fit: cover;
+        }
+
+        .scan-overlay {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 170px;
+            height: 170px;
+            border: 2px dashed var(--accent-cyan);
+            border-radius: 16px;
+            box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.4);
+            pointer-events: none;
+            animation: pulseOverlay 2s infinite ease-in-out;
+        }
+
+        @keyframes pulseOverlay {
+            0% { border-color: var(--accent-cyan); }
+            50% { border-color: var(--accent-green); }
+            100% { border-color: var(--accent-cyan); }
         }
 
         .result-box {
@@ -178,22 +199,17 @@
             margin-bottom: 10px;
             line-height: 1.6;
         }
+
+        .debug-status {
+            font-size: 11px;
+            color: var(--accent-cyan);
+            margin-top: 8px;
+            font-weight: 600;
+        }
     </style>
     <script>
-    
-var exports = undefined;
-var module = undefined;
-var define = undefined;
-(function webpackUniversalModuleDefinition(root, factory) {
-	if(typeof exports === 'object' && typeof module === 'object')
-		module.exports = factory();
-	else if(typeof define === 'function' && define.amd)
-		define([], factory);
-	else if(typeof exports === 'object')
-		exports["jsQR"] = factory();
-	else
-		root["jsQR"] = factory();
-})(typeof self !== 'undefined' ? self : this, function() {
+    if (typeof jsQR === 'undefined') {
+        window.jsQR = (function() {
 return /******/ (function(modules) { // webpackBootstrap
 /******/ 	// The module cache
 /******/ 	var installedModules = {};
@@ -1794,6 +1810,8 @@ exports.shiftJISTable = {
     
 
 
+})();
+    }
     </script>
 </head>
 <body>
@@ -1801,7 +1819,7 @@ exports.shiftJISTable = {
     <div class="header">
         <div class="header-title">🍊 MANDARIN AUTH</div>
         <div class="header-subtitle">Live Camera QR Authenticator</div>
-        <div class="badge-offline">⚡ 100% Offline (Guaranteed Engine)</div>
+        <div class="badge-offline">⚡ High-Precision Live Scanner</div>
     </div>
 
     <div class="card">
@@ -1810,12 +1828,13 @@ exports.shiftJISTable = {
         </button>
 
         <button id="btnSnapPhoto" class="secondary-btn" onclick="triggerCameraPhotoSnap()">
-            🖼 High-Precision Photo Snap (iPhone)
+            🖼 Snap Photo of PC Screen (iOS)
         </button>
         <input type="file" id="qrPhotoInput" accept="image/*" capture="environment" style="display: none;" onchange="handlePhotoSnap(event)">
 
-        <div id="videoContainer" class="video-container">
+        <div id="videoWrapper" class="video-wrapper">
             <video id="webcamVideo" playsinline webkit-playsinline autoplay muted></video>
+            <div class="scan-overlay"></div>
             <canvas id="scanCanvas" style="display: none;"></canvas>
         </div>
 
@@ -1823,23 +1842,26 @@ exports.shiftJISTable = {
             <div id="codeLabel" class="code-label">6-Digit Response PIN</div>
             <div id="codeDisplay" class="code-display">------</div>
             <div id="statusMessage" style="font-size: 12px; color: var(--text-dim);">
-                Tap button above to open live video scanner.
+                Tap button above to start live scanner.
             </div>
+            <div id="debugStatus" class="debug-status">Scanner Ready</div>
         </div>
     </div>
 
     <div class="footer-text">
-        <strong>Dual-Mode Scanner:</strong><br>
-        • Live Video Stream auto-scans in real-time.<br>
-        • High-Precision Photo Snap decodes photo instantly.
+        <strong>Operation Instructions:</strong><br>
+        1. Tap "Start Live Video Scanner".<br>
+        2. Point camera at PC monitor QR code inside dashed square.<br>
+        3. Enter generated 6-digit Response PIN into PC.
     </div>
 
     <script>
         const SECRET_KEY = "MANDARIN_AIRGAPPED_MASTER_SECRET_2026";
         let mediaStream = null;
         let scanInterval = null;
+        let frameCount = 0;
 
-        function getJsQREngine() {
+        function getScannerEngine() {
             if (typeof window.jsQR === 'function') return window.jsQR;
             if (typeof jsQR === 'function') return jsQR;
             if (window.jsQR && typeof window.jsQR.default === 'function') return window.jsQR.default;
@@ -1878,7 +1900,7 @@ exports.shiftJISTable = {
                     ctx.drawImage(img, 0, 0);
 
                     const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-                    const engine = getJsQREngine();
+                    const engine = getScannerEngine();
                     if (engine) {
                         const code = engine(imageData.data, imageData.width, imageData.height, {
                             inversionAttempts: "dontInvert"
@@ -1889,10 +1911,10 @@ exports.shiftJISTable = {
                         if (code && code.data && (code.data.startsWith('MNDCHALLENGE:') || code.data.includes('MNDCHALLENGE'))) {
                             onChallengeDetected(code.data);
                         } else {
-                            alert("QR code not detected in photo. Please ensure QR code is clear and try again.");
+                            alert("QR code not found in photo. Make sure the QR code on PC screen is fully visible and try again.");
                         }
                     } else {
-                        alert("jsQR engine initialization failed.");
+                        alert("Scanner engine not available.");
                     }
                 };
                 img.src = evt.target.result;
@@ -1901,65 +1923,94 @@ exports.shiftJISTable = {
         }
 
         function startLiveCamera() {
-            const videoContainer = document.getElementById('videoContainer');
+            const videoWrapper = document.getElementById('videoWrapper');
             const video = document.getElementById('webcamVideo');
             const btn = document.getElementById('btnStartLiveScan');
             const status = document.getElementById('statusMessage');
+            const debug = document.getElementById('debugStatus');
 
             btn.style.display = 'none';
-            videoContainer.style.display = 'block';
-            status.innerText = 'Searching for QR code on PC screen in real-time...';
+            videoWrapper.style.display = 'block';
+            status.innerText = 'Point camera at PC screen QR code...';
+            debug.innerText = 'Initializing camera...';
 
-            navigator.mediaDevices.getUserMedia({
-                video: {
-                    facingMode: { ideal: 'environment' },
-                    width: { ideal: 1280 },
-                    height: { ideal: 720 }
+            const constraintsList = [
+                { video: { facingMode: { exact: "environment" }, width: { ideal: 1280 }, height: { ideal: 720 } } },
+                { video: { facingMode: "environment" } },
+                { video: true }
+            ];
+
+            function tryStream(index) {
+                if (index >= constraintsList.length) {
+                    videoWrapper.style.display = 'none';
+                    btn.style.display = 'flex';
+                    status.innerHTML = `<span style="color: var(--accent-red); font-weight: bold;">Camera access denied or unreadable. Use "Snap Photo of PC Screen (iOS)" button.</span>`;
+                    return;
                 }
-            })
-            .then(stream => {
-                mediaStream = stream;
-                video.srcObject = stream;
-                video.setAttribute('playsinline', 'true');
-                video.setAttribute('webkit-playsinline', 'true');
-                video.muted = true;
-                video.play();
 
-                scanInterval = setInterval(processVideoFrame, 100);
-            })
-            .catch(err => {
-                videoContainer.style.display = 'none';
-                btn.style.display = 'flex';
-                status.innerHTML = `<span style="color: var(--accent-red); font-weight: bold;">Camera permission error: ${err.message}. Please allow camera access in Safari settings.</span>`;
-            });
+                navigator.mediaDevices.getUserMedia(constraintsList[index])
+                    .then(stream => {
+                        mediaStream = stream;
+                        video.srcObject = stream;
+                        video.setAttribute('playsinline', 'true');
+                        video.setAttribute('webkit-playsinline', 'true');
+                        video.muted = true;
+                        video.play();
+
+                        debug.innerText = 'Camera Active • Scanning frames...';
+                        frameCount = 0;
+                        scanInterval = setInterval(processVideoFrame, 120);
+                    })
+                    .catch(() => tryStream(index + 1));
+            }
+
+            tryStream(0);
         }
 
         function processVideoFrame() {
             const video = document.getElementById('webcamVideo');
             const canvas = document.getElementById('scanCanvas');
-            if (!video || video.readyState !== video.HAVE_ENOUGH_DATA) return;
+            const debug = document.getElementById('debugStatus');
 
-            const ctx = canvas.getContext('2d');
-            canvas.height = video.videoHeight;
+            if (!video || video.readyState !== video.HAVE_ENOUGH_DATA) return;
+            if (!video.videoWidth || !video.videoHeight) return;
+
+            frameCount++;
+            if (frameCount % 10 === 0) {
+                debug.innerText = `Scanning frame #${frameCount} (${video.videoWidth}x${video.videoHeight})...`;
+            }
+
             canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            const ctx = canvas.getContext('2d');
             ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
             const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-            const engine = getJsQREngine();
+            const engine = getScannerEngine();
+
             if (engine) {
-                const code = engine(imageData.data, imageData.width, imageData.height, {
+                let code = engine(imageData.data, imageData.width, imageData.height, {
                     inversionAttempts: "dontInvert"
                 });
-                if (code && code.data && (code.data.startsWith('MNDCHALLENGE:') || code.data.includes('MNDCHALLENGE'))) {
-                    stopLiveCamera();
-                    onChallengeDetected(code.data);
+                if (!code) {
+                    code = engine(imageData.data, imageData.width, imageData.height, {
+                        inversionAttempts: "onlyInvert"
+                    });
+                }
+
+                if (code && code.data) {
+                    debug.innerText = `QR Detected: ${code.data}`;
+                    if (code.data.startsWith('MNDCHALLENGE:') || code.data.includes('MNDCHALLENGE')) {
+                        stopLiveCamera();
+                        onChallengeDetected(code.data);
+                    }
                 }
             }
         }
 
         function stopLiveCamera() {
-            const videoContainer = document.getElementById('videoContainer');
-            if (videoContainer) videoContainer.style.display = 'none';
+            const videoWrapper = document.getElementById('videoWrapper');
+            if (videoWrapper) videoWrapper.style.display = 'none';
             if (scanInterval) { clearInterval(scanInterval); scanInterval = null; }
             if (mediaStream) {
                 mediaStream.getTracks().forEach(t => t.stop());
@@ -1969,8 +2020,16 @@ exports.shiftJISTable = {
 
         function onChallengeDetected(challengePayload) {
             const parts = challengePayload.split(':');
-            const mode = parts[1] || 'DEV';
-            const windowTime = parts[2] || Math.floor(Math.floor(Date.now() / 1000) / 30);
+            let mode = 'DEV';
+            let windowTime = Math.floor(Math.floor(Date.now() / 1000) / 30);
+
+            for (let i = 0; i < parts.length; i++) {
+                if (parts[i] === 'DEV' || parts[i] === 'STOP') {
+                    mode = parts[i];
+                    if (parts[i+1]) windowTime = parts[i+1];
+                    break;
+                }
+            }
 
             const sixDigitCode = simpleHmacSha256(SECRET_KEY, mode + ":" + windowTime);
             const formattedCode = sixDigitCode.substring(0, 3) + ' ' + sixDigitCode.substring(3);
@@ -1979,6 +2038,7 @@ exports.shiftJISTable = {
             const resultBox = document.getElementById('resultBox');
             const status = document.getElementById('statusMessage');
             const codeLabel = document.getElementById('codeLabel');
+            const debug = document.getElementById('debugStatus');
 
             codeDisp.innerText = formattedCode;
             codeLabel.innerText = mode === 'DEV' ? 'Developer Unlock Response PIN' : 'Server Shutdown Response PIN';
@@ -1991,7 +2051,8 @@ exports.shiftJISTable = {
                 codeDisp.className = 'code-display';
             }
 
-            status.innerHTML = `<span style="color: var(--accent-green); font-weight: 800;">✔ Scanned automatically! Enter this 6-digit Response PIN into PC.</span>`;
+            status.innerHTML = `<span style="color: var(--accent-green); font-weight: 800;">✔ Scanned Successfully! Enter this 6-digit Response PIN into PC.</span>`;
+            debug.innerText = 'Scan Complete!';
 
             const btn = document.getElementById('btnStartLiveScan');
             btn.style.display = 'flex';
