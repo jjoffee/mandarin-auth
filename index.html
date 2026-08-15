@@ -126,8 +126,8 @@
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            width: 170px;
-            height: 170px;
+            width: 180px;
+            height: 180px;
             border: 2px dashed var(--accent-cyan);
             border-radius: 16px;
             box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.4);
@@ -1811,8 +1811,8 @@ exports.shiftJISTable = {
 
     <div class="header">
         <div class="header-title">🍊 MANDARIN AUTH</div>
-        <div class="header-subtitle">High-Speed QR Authenticator</div>
-        <div class="badge-offline">⚡ Ultra-Fast 12.5 FPS Detection</div>
+        <div class="header-subtitle">High-Precision QR Authenticator</div>
+        <div class="badge-offline">⚡ Enhanced Scanner Engine</div>
     </div>
 
     <div class="card">
@@ -1839,7 +1839,7 @@ exports.shiftJISTable = {
     <div class="footer-text">
         <strong>Operation Instructions:</strong><br>
         1. Tap "Open Scanner".<br>
-        2. Point camera at PC monitor QR code.<br>
+        2. Point camera at PC monitor QR code inside dashed square.<br>
         3. Enter generated Alphanumeric PIN into PC.
     </div>
 
@@ -1887,7 +1887,11 @@ exports.shiftJISTable = {
             debug.innerText = 'Connecting camera...';
 
             navigator.mediaDevices.getUserMedia({
-                video: { facingMode: "environment" }
+                video: {
+                    facingMode: "environment",
+                    width: { ideal: 1280 },
+                    height: { ideal: 720 }
+                }
             })
             .catch(function() {
                 return navigator.mediaDevices.getUserMedia({ video: true });
@@ -1900,7 +1904,7 @@ exports.shiftJISTable = {
                 video.muted = true;
                 video.play();
 
-                debug.innerText = 'Camera Active • Scanning...';
+                debug.innerText = 'Camera Active • Hold steady over PC QR code...';
                 frameCount = 0;
                 scanInterval = setInterval(processVideoFrame, 80);
             })
@@ -1926,23 +1930,31 @@ exports.shiftJISTable = {
 
             frameCount++;
             if (frameCount % 10 === 0) {
-                debug.innerText = 'Scanning live video (' + video.videoWidth + 'x' + video.videoHeight + ') #' + frameCount;
+                debug.innerText = 'Scanning live video (' + video.videoWidth + 'x' + video.videoHeight + ') frame #' + frameCount;
             }
 
-            const ctx = canvas.getContext('2d');
+            const ctx = canvas.getContext('2d', { willReadFrequently: true });
             ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
             const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
             const engine = getScannerEngine();
 
             if (engine) {
-                const code = engine(imageData.data, imageData.width, imageData.height, {
-                    inversionAttempts: "attemptBoth"
+                let code = engine(imageData.data, imageData.width, imageData.height, {
+                    inversionAttempts: "dontInvert"
                 });
+                if (!code) {
+                    code = engine(imageData.data, imageData.width, imageData.height, {
+                        inversionAttempts: "onlyInvert"
+                    });
+                }
 
-                if (code && code.data && code.data.indexOf('MNDCHALLENGE') !== -1) {
-                    stopLiveCamera();
-                    onChallengeDetected(code.data);
+                if (code && code.data) {
+                    debug.innerText = 'QR Detected: ' + code.data;
+                    if (code.data.indexOf('MNDCHALLENGE') !== -1) {
+                        stopLiveCamera();
+                        onChallengeDetected(code.data);
+                    }
                 }
             }
         }
@@ -1990,7 +2002,7 @@ exports.shiftJISTable = {
                 codeDisp.className = 'code-display';
             }
 
-            status.innerHTML = `<span style="color: var(--accent-green); font-weight: 800;">✔ Scanned! Enter this Alphanumeric PIN into PC.</span>`;
+            status.innerHTML = `<span style="color: var(--accent-green); font-weight: 800;">✔ Scanned Successfully! Enter this Alphanumeric PIN into PC.</span>`;
             debug.innerText = 'Scan Complete!';
 
             const btn = document.getElementById('btnStartLiveScan');
