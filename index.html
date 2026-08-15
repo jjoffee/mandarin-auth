@@ -180,7 +180,11 @@
         }
     </style>
     <script>
-    (function webpackUniversalModuleDefinition(root, factory) {
+    
+var exports = undefined;
+var module = undefined;
+var define = undefined;
+(function webpackUniversalModuleDefinition(root, factory) {
 	if(typeof exports === 'object' && typeof module === 'object')
 		module.exports = factory();
 	else if(typeof define === 'function' && define.amd)
@@ -1796,8 +1800,8 @@ exports.shiftJISTable = {
 
     <div class="header">
         <div class="header-title">🍊 MANDARIN AUTH</div>
-        <div class="header-subtitle">Live & Photo Dual QR Authenticator</div>
-        <div class="badge-offline">⚡ 100% Offline (High Precision)</div>
+        <div class="header-subtitle">Live Camera QR Authenticator</div>
+        <div class="badge-offline">⚡ 100% Offline (Guaranteed Engine)</div>
     </div>
 
     <div class="card">
@@ -1819,7 +1823,7 @@ exports.shiftJISTable = {
             <div id="codeLabel" class="code-label">6-Digit Response PIN</div>
             <div id="codeDisplay" class="code-display">------</div>
             <div id="statusMessage" style="font-size: 12px; color: var(--text-dim);">
-                Tap button above to scan PC screen QR code.
+                Tap button above to open live video scanner.
             </div>
         </div>
     </div>
@@ -1827,13 +1831,20 @@ exports.shiftJISTable = {
     <div class="footer-text">
         <strong>Dual-Mode Scanner:</strong><br>
         • Live Video Stream auto-scans in real-time.<br>
-        • High-Precision Photo Snap allows instant decoding of photo.
+        • High-Precision Photo Snap decodes photo instantly.
     </div>
 
     <script>
         const SECRET_KEY = "MANDARIN_AIRGAPPED_MASTER_SECRET_2026";
         let mediaStream = null;
         let scanInterval = null;
+
+        function getJsQREngine() {
+            if (typeof window.jsQR === 'function') return window.jsQR;
+            if (typeof jsQR === 'function') return jsQR;
+            if (window.jsQR && typeof window.jsQR.default === 'function') return window.jsQR.default;
+            return null;
+        }
 
         function simpleHmacSha256(key, message) {
             let hash = 0;
@@ -1867,10 +1878,11 @@ exports.shiftJISTable = {
                     ctx.drawImage(img, 0, 0);
 
                     const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-                    if (typeof jsQR !== 'undefined') {
-                        const code = jsQR(imageData.data, imageData.width, imageData.height, {
+                    const engine = getJsQREngine();
+                    if (engine) {
+                        const code = engine(imageData.data, imageData.width, imageData.height, {
                             inversionAttempts: "dontInvert"
-                        }) || jsQR(imageData.data, imageData.width, imageData.height, {
+                        }) || engine(imageData.data, imageData.width, imageData.height, {
                             inversionAttempts: "onlyInvert"
                         });
 
@@ -1880,7 +1892,7 @@ exports.shiftJISTable = {
                             alert("QR code not detected in photo. Please ensure QR code is clear and try again.");
                         }
                     } else {
-                        alert("jsQR engine not loaded.");
+                        alert("jsQR engine initialization failed.");
                     }
                 };
                 img.src = evt.target.result;
@@ -1933,8 +1945,9 @@ exports.shiftJISTable = {
             ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
             const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-            if (typeof jsQR !== 'undefined') {
-                const code = jsQR(imageData.data, imageData.width, imageData.height, {
+            const engine = getJsQREngine();
+            if (engine) {
+                const code = engine(imageData.data, imageData.width, imageData.height, {
                     inversionAttempts: "dontInvert"
                 });
                 if (code && code.data && (code.data.startsWith('MNDCHALLENGE:') || code.data.includes('MNDCHALLENGE'))) {
