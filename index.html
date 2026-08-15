@@ -1811,8 +1811,8 @@ exports.shiftJISTable = {
 
     <div class="header">
         <div class="header-title">🍊 MANDARIN AUTH</div>
-        <div class="header-subtitle">High-Precision QR Authenticator</div>
-        <div class="badge-offline">⚡ Enhanced Scanner Engine</div>
+        <div class="header-subtitle">Instant QR Authenticator</div>
+        <div class="badge-offline">⚡ Instant Recognition Mode</div>
     </div>
 
     <div class="card">
@@ -1888,9 +1888,7 @@ exports.shiftJISTable = {
 
             navigator.mediaDevices.getUserMedia({
                 video: {
-                    facingMode: "environment",
-                    width: { ideal: 1280 },
-                    height: { ideal: 720 }
+                    facingMode: "environment"
                 }
             })
             .catch(function() {
@@ -1945,16 +1943,14 @@ exports.shiftJISTable = {
                 });
                 if (!code) {
                     code = engine(imageData.data, imageData.width, imageData.height, {
-                        inversionAttempts: "onlyInvert"
+                        inversionAttempts: "attemptBoth"
                     });
                 }
 
-                if (code && code.data) {
+                if (code && code.data && code.data.length > 0) {
                     debug.innerText = 'QR Detected: ' + code.data;
-                    if (code.data.indexOf('MNDCHALLENGE') !== -1) {
-                        stopLiveCamera();
-                        onChallengeDetected(code.data);
-                    }
+                    stopLiveCamera();
+                    onChallengeDetected(code.data);
                 }
             }
         }
@@ -1970,7 +1966,7 @@ exports.shiftJISTable = {
         }
 
         function onChallengeDetected(challengePayload) {
-            const parts = challengePayload.split(':');
+            const parts = String(challengePayload).split(':');
             let mode = 'DEV';
             let windowTime = Math.floor(Math.floor(Date.now() / 1000) / 30);
 
