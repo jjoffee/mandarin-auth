@@ -5,32 +5,36 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>Mandarin Auth</title>
+    <meta name="theme-color" content="#060a14">
+    <title>Mandarin Authenticator • 2FA</title>
     <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <style>
         * {
             box-sizing: border-box;
             margin: 0;
             padding: 0;
             -webkit-tap-highlight-color: transparent;
-            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', Roboto, sans-serif;
         }
 
         :root {
             --bg: #060a14;
-            --surface: #0d1425;
-            --surface2: #121a30;
+            --mandarin-orange: #ff7a00;
+            --mandarin-glow: rgba(255, 122, 0, 0.35);
             --cyan: #00d4ff;
-            --cyan-dim: rgba(0, 212, 255, 0.15);
-            --cyan-glow: rgba(0, 212, 255, 0.3);
+            --cyan-glow: rgba(0, 212, 255, 0.35);
             --green: #00e5a0;
-            --green-dim: rgba(0, 229, 160, 0.12);
+            --green-glow: rgba(0, 229, 160, 0.3);
             --red: #ff4757;
-            --red-dim: rgba(255, 71, 87, 0.12);
-            --text: #f0f6ff;
-            --text-dim: #6b7fa3;
-            --text-muted: #3a4a6b;
-            --border: rgba(255,255,255,0.06);
+            --red-glow: rgba(255, 71, 87, 0.35);
+            --text-main: #f0f6ff;
+            --text-dim: #8b9bb4;
+            --text-muted: #485672;
+            --glass-bg: rgba(13, 20, 38, 0.65);
+            --glass-card: rgba(18, 27, 49, 0.7);
+            --glass-border: rgba(255, 255, 255, 0.12);
+            --glass-border-glow: rgba(0, 212, 255, 0.3);
             --safe-top: env(safe-area-inset-top, 20px);
             --safe-bottom: env(safe-area-inset-bottom, 20px);
         }
@@ -40,7 +44,7 @@
             min-height: 100vh;
             min-height: 100dvh;
             background: var(--bg);
-            color: var(--text);
+            color: var(--text-main);
             overflow-x: hidden;
         }
 
@@ -51,18 +55,43 @@
             min-height: 100dvh;
             padding-top: var(--safe-top);
             padding-bottom: var(--safe-bottom);
+            position: relative;
         }
 
-        /* ── Ambient background ── */
-        body::before {
-            content: '';
+        /* ── Ambient Glowing Glass Blobs ── */
+        .ambient-glow {
             position: fixed;
             inset: 0;
-            background:
-                radial-gradient(ellipse 60% 40% at 20% 0%, rgba(0,212,255,0.07) 0%, transparent 60%),
-                radial-gradient(ellipse 50% 35% at 80% 100%, rgba(0,229,160,0.05) 0%, transparent 60%);
             pointer-events: none;
             z-index: 0;
+            overflow: hidden;
+        }
+        .glow-orb-1 {
+            position: absolute;
+            top: -10%;
+            left: 10%;
+            width: 320px;
+            height: 320px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(255, 122, 0, 0.18) 0%, rgba(255, 122, 0, 0) 70%);
+            filter: blur(50px);
+            animation: orbFloat 8s infinite ease-in-out alternate;
+        }
+        .glow-orb-2 {
+            position: absolute;
+            bottom: 5%;
+            right: 5%;
+            width: 360px;
+            height: 360px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(0, 212, 255, 0.16) 0%, rgba(0, 212, 255, 0) 70%);
+            filter: blur(60px);
+            animation: orbFloat 10s infinite ease-in-out alternate-reverse;
+        }
+
+        @keyframes orbFloat {
+            0% { transform: translate(0, 0) scale(1); }
+            100% { transform: translate(25px, 25px) scale(1.1); }
         }
 
         .page-content {
@@ -72,20 +101,26 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            padding: 16px 16px 24px;
+            padding: 16px 16px 28px;
             gap: 16px;
             max-width: 480px;
             margin: 0 auto;
             width: 100%;
         }
 
-        /* ── Header ── */
+        /* ── Glass Header ── */
         .app-header {
             width: 100%;
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 4px 0;
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px) saturate(180%);
+            -webkit-backdrop-filter: blur(20px) saturate(180%);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            padding: 10px 14px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.35);
         }
 
         .brand {
@@ -95,15 +130,29 @@
         }
 
         .brand-icon {
-            width: 38px;
-            height: 38px;
-            background: linear-gradient(135deg, var(--cyan), #0077ff);
-            border-radius: 10px;
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, #ff7a00, #ff4757);
+            border-radius: 12px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 20px;
-            box-shadow: 0 4px 14px rgba(0,212,255,0.3);
+            font-size: 22px;
+            box-shadow: 0 4px 16px var(--mandarin-glow);
+            border: 1px solid rgba(255, 255, 255, 0.25);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .brand-icon::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 50%;
+            background: linear-gradient(180deg, rgba(255,255,255,0.35) 0%, transparent 100%);
+            border-radius: 12px 12px 0 0;
         }
 
         .brand-text {
@@ -113,62 +162,72 @@
 
         .brand-name {
             font-size: 15px;
-            font-weight: 800;
-            color: var(--text);
-            letter-spacing: 0.5px;
+            font-weight: 900;
+            color: #fff;
+            letter-spacing: 0.8px;
+            background: linear-gradient(135deg, #fff 40%, #ff9f43 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
         }
 
         .brand-sub {
-            font-size: 10px;
+            font-size: 9.5px;
             color: var(--text-dim);
-            letter-spacing: 1px;
+            letter-spacing: 1.2px;
             text-transform: uppercase;
+            font-weight: 700;
         }
 
         .status-pill {
             display: flex;
             align-items: center;
-            gap: 5px;
-            background: var(--green-dim);
-            border: 1px solid rgba(0,229,160,0.2);
+            gap: 6px;
+            background: rgba(0, 229, 160, 0.12);
+            border: 1px solid rgba(0, 229, 160, 0.3);
             border-radius: 20px;
-            padding: 5px 10px;
-            font-size: 10px;
-            font-weight: 700;
+            padding: 5px 12px;
+            font-size: 10.5px;
+            font-weight: 800;
             color: var(--green);
-            letter-spacing: 0.5px;
+            letter-spacing: 0.6px;
+            box-shadow: 0 2px 10px rgba(0, 229, 160, 0.15);
         }
 
         .status-dot {
-            width: 6px;
-            height: 6px;
+            width: 7px;
+            height: 7px;
             border-radius: 50%;
             background: var(--green);
+            box-shadow: 0 0 8px var(--green);
             animation: blink 2s infinite;
         }
 
         @keyframes blink {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.3; }
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.3; transform: scale(0.85); }
         }
 
-        /* ── Scan card ── */
+        /* ── Glassmorphism Scan Card ── */
         .scan-card {
             width: 100%;
-            background: var(--surface);
-            border: 1px solid var(--border);
-            border-radius: 24px;
+            background: var(--glass-card);
+            backdrop-filter: blur(24px) saturate(190%);
+            -webkit-backdrop-filter: blur(24px) saturate(190%);
+            border: 1px solid var(--glass-border);
+            border-radius: 28px;
             overflow: hidden;
-            box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+            box-shadow: 0 16px 40px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.15);
+            position: relative;
         }
 
-        /* ── Video area ── */
+        /* Video Area */
         .video-section {
             position: relative;
             width: 100%;
             aspect-ratio: 1 / 1;
             background: #000;
             display: none;
+            overflow: hidden;
         }
 
         .video-section.active {
@@ -182,48 +241,51 @@
             display: block;
         }
 
-        /* Corners viewfinder */
+        /* Viewfinder Overlay */
         .vf-overlay {
             position: absolute;
             inset: 0;
             display: flex;
             align-items: center;
             justify-content: center;
+            pointer-events: none;
         }
 
         .vf-frame {
             position: relative;
-            width: 65%;
+            width: 68%;
             aspect-ratio: 1;
         }
 
         .vf-corner {
             position: absolute;
-            width: 22px;
-            height: 22px;
+            width: 26px;
+            height: 26px;
             border-color: var(--cyan);
             border-style: solid;
+            filter: drop-shadow(0 0 6px var(--cyan));
         }
 
-        .vf-corner.tl { top: 0; left: 0; border-width: 2.5px 0 0 2.5px; border-radius: 4px 0 0 0; }
-        .vf-corner.tr { top: 0; right: 0; border-width: 2.5px 2.5px 0 0; border-radius: 0 4px 0 0; }
-        .vf-corner.bl { bottom: 0; left: 0; border-width: 0 0 2.5px 2.5px; border-radius: 0 0 0 4px; }
-        .vf-corner.br { bottom: 0; right: 0; border-width: 0 2.5px 2.5px 0; border-radius: 0 0 4px 0; }
+        .vf-corner.tl { top: 0; left: 0; border-width: 3.5px 0 0 3.5px; border-radius: 6px 0 0 0; }
+        .vf-corner.tr { top: 0; right: 0; border-width: 3.5px 3.5px 0 0; border-radius: 0 6px 0 0; }
+        .vf-corner.bl { bottom: 0; left: 0; border-width: 0 0 3.5px 3.5px; border-radius: 0 0 0 6px; }
+        .vf-corner.br { bottom: 0; right: 0; border-width: 0 3.5px 3.5px 0; border-radius: 0 0 6px 0; }
 
         .vf-scan-line {
             position: absolute;
-            left: 4px;
-            right: 4px;
-            height: 1.5px;
-            background: linear-gradient(90deg, transparent, var(--cyan), transparent);
-            animation: scanLine 2s infinite ease-in-out;
+            left: 6px;
+            right: 6px;
+            height: 2.5px;
+            background: linear-gradient(90deg, transparent, #ff7a00, #00d4ff, transparent);
+            box-shadow: 0 0 12px #00d4ff, 0 0 6px #ff7a00;
+            animation: scanLineAnim 2s infinite ease-in-out;
             top: 0;
         }
 
-        @keyframes scanLine {
-            0% { top: 4px; opacity: 1; }
-            90% { top: calc(100% - 4px); opacity: 1; }
-            100% { top: calc(100% - 4px); opacity: 0; }
+        @keyframes scanLineAnim {
+            0% { top: 6px; opacity: 1; }
+            90% { top: calc(100% - 6px); opacity: 1; }
+            100% { top: calc(100% - 6px); opacity: 0; }
         }
 
         .vf-bg {
@@ -232,83 +294,68 @@
             background: rgba(0,0,0,0.45);
         }
 
-        .vf-window {
-            position: absolute;
-            inset: 0;
-            clip-path: polygon(
-                0% 0%, 100% 0%, 100% 100%, 0% 100%,
-                0% 17.5%, 17.5% 17.5%, 17.5% 82.5%, 82.5% 82.5%, 82.5% 17.5%, 17.5% 17.5%,
-                0% 17.5%
-            );
-        }
-
-        /* Live indicator */
         .live-badge {
             position: absolute;
-            top: 12px;
-            left: 12px;
+            top: 14px;
+            left: 14px;
             display: flex;
             align-items: center;
-            gap: 5px;
-            background: rgba(0,0,0,0.6);
-            backdrop-filter: blur(8px);
-            border: 1px solid rgba(255,255,255,0.1);
+            gap: 6px;
+            background: rgba(0,0,0,0.65);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.15);
             border-radius: 20px;
             padding: 4px 10px;
             font-size: 10px;
-            font-weight: 700;
+            font-weight: 800;
             color: var(--red);
             letter-spacing: 0.5px;
         }
 
-        .live-dot {
-            width: 5px;
-            height: 5px;
-            border-radius: 50%;
-            background: var(--red);
-            animation: blink 1s infinite;
-        }
-
-        /* Frame counter */
         .frame-badge {
             position: absolute;
-            top: 12px;
-            right: 12px;
-            background: rgba(0,0,0,0.6);
-            backdrop-filter: blur(8px);
-            border: 1px solid rgba(255,255,255,0.08);
-            border-radius: 8px;
-            padding: 4px 8px;
-            font-size: 9px;
-            font-family: 'SF Mono', 'Fira Code', monospace;
-            color: var(--text-dim);
+            top: 14px;
+            right: 14px;
+            background: rgba(0,0,0,0.65);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.12);
+            border-radius: 10px;
+            padding: 4px 9px;
+            font-size: 9.5px;
+            font-family: 'SF Mono', monospace;
+            color: var(--cyan);
+            font-weight: 700;
         }
 
-        /* ── Idle state ── */
+        /* ── Idle State ── */
         .idle-section {
-            padding: 36px 24px;
+            padding: 38px 24px 30px;
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 20px;
+            gap: 18px;
         }
 
         .idle-icon-wrap {
-            width: 80px;
-            height: 80px;
+            width: 86px;
+            height: 86px;
             border-radius: 50%;
-            background: var(--cyan-dim);
-            border: 1px solid rgba(0,212,255,0.2);
+            background: radial-gradient(circle, rgba(255, 122, 0, 0.25) 0%, rgba(0, 212, 255, 0.1) 100%);
+            border: 1px solid rgba(255, 122, 0, 0.4);
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 36px;
+            font-size: 38px;
+            box-shadow: 0 0 24px var(--mandarin-glow);
             animation: idlePulse 3s infinite ease-in-out;
+            position: relative;
         }
 
         @keyframes idlePulse {
-            0%, 100% { box-shadow: 0 0 0 0 var(--cyan-glow); }
-            50% { box-shadow: 0 0 0 16px transparent; }
+            0%, 100% { transform: scale(1); box-shadow: 0 0 20px var(--mandarin-glow); }
+            50% { transform: scale(1.05); box-shadow: 0 0 32px var(--mandarin-glow), 0 0 16px var(--cyan-glow); }
         }
 
         .idle-text {
@@ -316,19 +363,21 @@
         }
 
         .idle-title {
-            font-size: 17px;
-            font-weight: 700;
-            color: var(--text);
+            font-size: 18px;
+            font-weight: 800;
+            color: #fff;
             margin-bottom: 6px;
+            letter-spacing: 0.3px;
         }
 
         .idle-subtitle {
             font-size: 13px;
             color: var(--text-dim);
             line-height: 1.5;
+            max-width: 280px;
         }
 
-        /* ── Scan button ── */
+        /* ── Action Scan Button ── */
         .scan-btn {
             display: flex;
             align-items: center;
@@ -337,17 +386,16 @@
             width: calc(100% - 32px);
             margin: 0 16px 20px;
             padding: 16px;
-            background: linear-gradient(135deg, #00d4ff, #0066ee);
-            border: none;
-            border-radius: 16px;
+            background: linear-gradient(135deg, #ff7a00 0%, #ff4757 50%, #0077ff 100%);
+            border: 1px solid rgba(255, 255, 255, 0.25);
+            border-radius: 18px;
             color: #fff;
             font-size: 16px;
             font-weight: 800;
-            letter-spacing: 0.3px;
+            letter-spacing: 0.5px;
             cursor: pointer;
-            box-shadow: 0 6px 24px rgba(0,212,255,0.3);
-            transition: transform 0.15s, box-shadow 0.15s;
-            -webkit-appearance: none;
+            box-shadow: 0 8px 28px var(--mandarin-glow);
+            transition: all 0.2s;
             position: relative;
             overflow: hidden;
         }
@@ -355,27 +403,31 @@
         .scan-btn::before {
             content: '';
             position: absolute;
-            inset: 0;
-            background: linear-gradient(180deg, rgba(255,255,255,0.12) 0%, transparent 50%);
-            pointer-events: none;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 50%;
+            background: linear-gradient(180deg, rgba(255,255,255,0.25) 0%, transparent 100%);
+            border-radius: 18px 18px 0 0;
         }
 
         .scan-btn:active {
             transform: scale(0.97);
-            box-shadow: 0 2px 12px rgba(0,212,255,0.2);
+            box-shadow: 0 4px 16px var(--mandarin-glow);
         }
 
         .scan-btn.hidden { display: none; }
 
-        .btn-icon { font-size: 20px; }
-
-        /* ── Result card ── */
+        /* ── Glassmorphism Result Card ── */
         .result-card {
             width: 100%;
-            background: var(--surface2);
-            border: 1px solid var(--border);
-            border-radius: 24px;
+            background: var(--glass-card);
+            backdrop-filter: blur(24px) saturate(190%);
+            -webkit-backdrop-filter: blur(24px) saturate(190%);
+            border: 1px solid var(--glass-border);
+            border-radius: 28px;
             overflow: hidden;
+            box-shadow: 0 16px 40px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.15);
         }
 
         .result-inner {
@@ -384,20 +436,24 @@
         }
 
         .result-label {
-            font-size: 10px;
-            font-weight: 700;
+            font-size: 11px;
+            font-weight: 800;
             letter-spacing: 1.5px;
             text-transform: uppercase;
             color: var(--text-dim);
-            margin-bottom: 12px;
+            margin-bottom: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
         }
 
         .code-wrap {
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 6px;
-            margin-bottom: 14px;
+            gap: 8px;
+            margin-bottom: 12px;
         }
 
         .code-group {
@@ -406,11 +462,12 @@
             font-weight: 900;
             letter-spacing: 4px;
             color: var(--cyan);
-            background: rgba(0,212,255,0.06);
-            border: 1px solid rgba(0,212,255,0.15);
-            border-radius: 12px;
-            padding: 10px 16px;
-            min-width: 100px;
+            background: rgba(0, 212, 255, 0.08);
+            border: 1px solid rgba(0, 212, 255, 0.3);
+            border-radius: 16px;
+            padding: 10px 18px;
+            min-width: 110px;
+            box-shadow: 0 4px 20px rgba(0, 212, 255, 0.15), inset 0 1px 0 rgba(255,255,255,0.15);
             transition: all 0.3s;
         }
 
@@ -420,12 +477,84 @@
             color: var(--text-muted);
         }
 
-        .code-group.stop-mode { color: var(--red); background: rgba(255,71,87,0.06); border-color: rgba(255,71,87,0.15); }
+        .code-group.stop-mode {
+            color: var(--red);
+            background: rgba(255, 71, 87, 0.08);
+            border-color: rgba(255, 71, 87, 0.3);
+            box-shadow: 0 4px 20px rgba(255, 71, 87, 0.2);
+        }
+
+        /* ── Dynamic Live Timer Component on Mobile ── */
+        .mobile-timer-box {
+            background: rgba(0, 0, 0, 0.35);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            padding: 12px 16px;
+            margin: 14px 0 12px;
+            box-shadow: inset 0 2px 6px rgba(0,0,0,0.3);
+        }
+
+        .timer-header-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+            font-size: 11px;
+            font-weight: 700;
+        }
+
+        .timer-title {
+            color: var(--text-dim);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            letter-spacing: 0.3px;
+        }
+
+        .timer-badge {
+            font-family: 'SF Mono', monospace;
+            font-size: 13px;
+            font-weight: 900;
+            color: var(--cyan);
+            background: rgba(0, 212, 255, 0.12);
+            border: 1px solid rgba(0, 212, 255, 0.3);
+            padding: 2px 8px;
+            border-radius: 8px;
+        }
+
+        .timer-bar-track {
+            width: 100%;
+            height: 8px;
+            background: rgba(255, 255, 255, 0.06);
+            border-radius: 20px;
+            overflow: hidden;
+            padding: 1px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .timer-bar-fill {
+            height: 100%;
+            width: 100%;
+            background: linear-gradient(90deg, #ff7a00, #00d4ff);
+            border-radius: 20px;
+            transition: width 0.3s linear;
+            box-shadow: 0 0 10px rgba(0, 212, 255, 0.5);
+        }
+
+        .timer-footer-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 6px;
+            font-size: 10px;
+            color: var(--text-dim);
+        }
 
         .result-status {
             font-size: 13px;
             color: var(--text-dim);
             line-height: 1.5;
+            margin-top: 8px;
         }
 
         .result-status.success {
@@ -437,47 +566,107 @@
             font-weight: 700;
         }
 
-        /* ── Log panel ── */
+        /* ── Copy Button ── */
+        .copy-btn {
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid var(--glass-border);
+            color: #fff;
+            padding: 7px 16px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 700;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            margin-top: 10px;
+            transition: all 0.2s;
+        }
+
+        .copy-btn:active {
+            background: rgba(255, 255, 255, 0.15);
+            transform: scale(0.96);
+        }
+
+        /* ── Glass Step Tiles ── */
+        .instructions {
+            width: 100%;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+        }
+
+        .step-tile {
+            background: var(--glass-bg);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--glass-border);
+            border-radius: 18px;
+            padding: 14px 10px;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+        }
+
+        .step-num {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, rgba(255,122,0,0.3), rgba(0,212,255,0.3));
+            border: 1px solid rgba(255,255,255,0.2);
+            font-size: 11px;
+            font-weight: 900;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .step-text {
+            font-size: 10.5px;
+            color: var(--text-dim);
+            line-height: 1.4;
+            font-weight: 600;
+        }
+
+        /* ── Log Panel ── */
         .log-panel {
             width: 100%;
-            background: var(--surface);
-            border: 1px solid var(--border);
-            border-radius: 16px;
+            background: var(--glass-bg);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--glass-border);
+            border-radius: 18px;
             overflow: hidden;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.3);
         }
 
         .log-header {
             display: flex;
             align-items: center;
-            gap: 6px;
+            justify-content: space-between;
             padding: 10px 14px;
-            border-bottom: 1px solid var(--border);
+            border-bottom: 1px solid var(--glass-border);
             font-size: 10px;
-            font-weight: 700;
+            font-weight: 800;
             letter-spacing: 1px;
             text-transform: uppercase;
             color: var(--text-dim);
         }
 
-        .log-header span.dot {
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            background: var(--cyan);
-            opacity: 0.6;
-        }
-
         .log-body {
             padding: 10px 14px;
             font-size: 10.5px;
-            font-family: 'SF Mono', 'Fira Code', 'Courier New', monospace;
+            font-family: 'SF Mono', monospace;
             color: var(--text-dim);
-            max-height: 100px;
+            max-height: 80px;
             overflow-y: auto;
-            line-height: 1.8;
+            line-height: 1.7;
             scrollbar-width: none;
         }
-
         .log-body::-webkit-scrollbar { display: none; }
 
         .log-line.ok { color: var(--green); }
@@ -485,74 +674,27 @@
         .log-line.info { color: var(--cyan); }
         .log-line.dim { color: var(--text-muted); }
 
-        /* ── Footer instructions ── */
-        .instructions {
-            width: 100%;
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 8px;
-        }
-
-        .step {
-            background: var(--surface);
-            border: 1px solid var(--border);
-            border-radius: 14px;
-            padding: 14px 10px;
-            text-align: center;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 6px;
-        }
-
-        .step-num {
-            width: 22px;
-            height: 22px;
-            border-radius: 50%;
-            background: var(--cyan-dim);
-            border: 1px solid rgba(0,212,255,0.2);
-            font-size: 11px;
-            font-weight: 800;
-            color: var(--cyan);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .step-text {
-            font-size: 10px;
-            color: var(--text-dim);
-            line-height: 1.4;
-        }
-
-        /* ── Responsive tweaks ── */
-        @media (max-width: 360px) {
-            .code-group { font-size: 30px; padding: 8px 12px; min-width: 80px; }
-            .idle-icon-wrap { width: 64px; height: 64px; font-size: 28px; }
-        }
-
-        @media (min-width: 480px) {
-            .page-content { padding: 24px 24px 32px; }
-        }
-
-        /* Success animation */
+        /* Animation */
         @keyframes successPop {
-            0% { transform: scale(0.8); opacity: 0; }
+            0% { transform: scale(0.85); opacity: 0; }
             60% { transform: scale(1.05); }
             100% { transform: scale(1); opacity: 1; }
         }
-
-        .animate-pop {
-            animation: successPop 0.4s ease forwards;
-        }
+        .animate-pop { animation: successPop 0.35s ease forwards; }
 
         canvas { display: none; }
     </style>
 </head>
 <body>
+
+<div class="ambient-glow">
+    <div class="glow-orb-1"></div>
+    <div class="glow-orb-2"></div>
+</div>
+
 <div class="page-content">
 
-    <!-- Header -->
+    <!-- Glass Header -->
     <header class="app-header">
         <div class="brand">
             <div class="brand-icon">🍊</div>
@@ -563,14 +705,14 @@
         </div>
         <div class="status-pill">
             <div class="status-dot"></div>
-            OFFLINE
+            AIR-GAPPED 2FA
         </div>
     </header>
 
-    <!-- Main scan card -->
+    <!-- Glass Scan Card -->
     <div class="scan-card" id="scanCard">
 
-        <!-- Video scanner (hidden until active) -->
+        <!-- Live Camera Viewfinder -->
         <div class="video-section" id="videoSection">
             <video id="webcamVideo" playsinline webkit-playsinline autoplay muted></video>
             <canvas id="scanCanvas"></canvas>
@@ -587,77 +729,98 @@
             </div>
 
             <div class="live-badge">
-                <div class="live-dot"></div>
-                LIVE
+                <div class="status-dot" style="background: var(--red); box-shadow: 0 0 6px var(--red);"></div>
+                LIVE SCAN
             </div>
             <div class="frame-badge" id="frameBadge">0 fps</div>
         </div>
 
-        <!-- Idle state -->
+        <!-- Idle State -->
         <div class="idle-section" id="idleSection">
             <div class="idle-icon-wrap">📷</div>
             <div class="idle-text">
-                <div class="idle-title">Scan QR Code</div>
-                <div class="idle-subtitle">Point your camera at the QR code displayed on your PC screen</div>
+                <div class="idle-title">Scan Dynamic QR Code</div>
+                <div class="idle-subtitle">Point camera at the challenge QR code on your PC screen</div>
             </div>
         </div>
 
-        <!-- Scan button -->
+        <!-- Scan Button -->
         <button class="scan-btn" id="btnScan" onclick="startLiveCamera()">
-            <span class="btn-icon">📷</span>
+            <span>📷</span>
             <span id="btnText">Open Scanner</span>
         </button>
     </div>
 
-    <!-- Result card -->
+    <!-- Glass Result Card -->
     <div class="result-card">
         <div class="result-inner">
-            <div class="result-label" id="resultLabel">Response PIN</div>
+            <div class="result-label" id="resultLabel">
+                <i class="fa-solid fa-shield-halved" style="color: var(--cyan);"></i>
+                <span>Response PIN</span>
+            </div>
+            
             <div class="code-wrap">
                 <div class="code-group" id="codeA">---</div>
                 <div class="code-sep">-</div>
                 <div class="code-group" id="codeB">---</div>
             </div>
-            <!-- Dynamic Countdown Timer Badge & Progress Bar on Mobile -->
-            <div id="mobileCountdownWrap" style="display: none; margin: 10px 0 12px; background: rgba(0,0,0,0.25); padding: 10px 14px; border-radius: 12px; border: 1px solid var(--border);">
-                <div style="display: flex; justify-content: space-between; align-items: center; font-size: 11px; margin-bottom: 6px; font-weight: 700;">
-                    <span style="color: var(--text-dim); display: flex; align-items: center; gap: 5px;">
-                        <span>⏱️</span> <span id="mobileTimerTitle">Code valid for</span>
-                    </span>
-                    <span id="mobileTimerVal" style="font-family: 'SF Mono', monospace; color: var(--cyan); font-size: 13px; font-weight: 800;">60s</span>
+
+            <!-- Dynamic Live Expiration Time Bar on Mobile -->
+            <div id="mobileCountdownWrap" class="mobile-timer-box" style="display: none;">
+                <div class="timer-header-row">
+                    <div class="timer-title">
+                        <span>⏱️</span>
+                        <span id="mobileTimerTitle">CODE VALID FOR</span>
+                    </div>
+                    <div id="mobileTimerVal" class="timer-badge">60s</div>
                 </div>
-                <div style="width: 100%; height: 6px; background: rgba(255,255,255,0.08); border-radius: 10px; overflow: hidden;">
-                    <div id="mobileTimerBar" style="height: 100%; width: 100%; background: linear-gradient(90deg, var(--cyan), #0066ee); border-radius: 10px; transition: width 0.3s linear;"></div>
+
+                <div class="timer-bar-track">
+                    <div id="mobileTimerBar" class="timer-bar-fill"></div>
+                </div>
+
+                <div class="timer-footer-row">
+                    <span>Syncs with PC cycle</span>
+                    <span id="mobileTimerPct" style="font-family: monospace; font-weight: 700; color: var(--cyan);">100%</span>
                 </div>
             </div>
+
             <div class="result-status" id="resultStatus">Awaiting scan…</div>
+
+            <button id="btnCopyCode" class="copy-btn" style="display: none;" onclick="copyPinCode()">
+                <i class="fa-regular fa-copy"></i>
+                <span id="copyBtnText">Copy PIN</span>
+            </button>
         </div>
     </div>
 
-    <!-- Log panel -->
-    <div class="log-panel">
-        <div class="log-header">
-            <span class="dot"></span>
-            System Log
-        </div>
-        <div class="log-body" id="logBody">
-            <div class="log-line dim">▶ System initializing…</div>
-        </div>
-    </div>
-
-    <!-- Steps -->
+    <!-- Glass Step Tiles -->
     <div class="instructions">
-        <div class="step">
+        <div class="step-tile">
             <div class="step-num">1</div>
-            <div class="step-text">Tap Open Scanner</div>
+            <div class="step-text">Open Scanner</div>
         </div>
-        <div class="step">
+        <div class="step-tile">
             <div class="step-num">2</div>
-            <div class="step-text">Point at PC QR code</div>
+            <div class="step-text">Scan PC QR</div>
         </div>
-        <div class="step">
+        <div class="step-tile">
             <div class="step-num">3</div>
             <div class="step-text">Enter PIN on PC</div>
+        </div>
+    </div>
+
+    <!-- System Log Panel -->
+    <div class="log-panel">
+        <div class="log-header">
+            <div style="display: flex; align-items: center; gap: 6px;">
+                <span style="width: 6px; height: 6px; border-radius: 50%; background: var(--cyan);"></span>
+                <span>System Security Log</span>
+            </div>
+            <span style="font-family: monospace; font-size: 9px; color: var(--text-muted);">TOTP v2</span>
+        </div>
+        <div class="log-body" id="logBody">
+            <div class="log-line dim">▶ Mandarin Auth Engine initialized</div>
         </div>
     </div>
 
@@ -669,9 +832,12 @@
     let scanInterval = null;
     let frameCount = 0;
     let lastFrameTime = Date.now();
+    let mobileTimerInterval = null;
+    let currentGeneratedCode = '';
 
     function log(msg, type = '') {
         const lb = document.getElementById('logBody');
+        if (!lb) return;
         const line = document.createElement('div');
         line.className = 'log-line ' + type;
         line.textContent = msg;
@@ -679,11 +845,27 @@
         lb.scrollTop = lb.scrollHeight;
     }
 
+    function playBeepSound() {
+        try {
+            const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(880, audioCtx.currentTime); // A5
+            gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.12);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start();
+            osc.stop(audioCtx.currentTime + 0.12);
+        } catch(e) {}
+    }
+
     window.addEventListener('load', function() {
         if (typeof jsQR === 'function') {
-            log('✅ jsQR engine loaded', 'ok');
+            log('✅ jsQR engine ready', 'ok');
         } else {
-            log('❌ jsQR engine failed', 'err');
+            log('❌ jsQR engine missing', 'err');
         }
     });
 
@@ -725,11 +907,11 @@
                 video.play();
                 frameCount = 0;
                 lastFrameTime = Date.now();
-                log('✅ Camera active', 'ok');
+                log('✅ Camera stream active', 'ok');
                 scanInterval = setInterval(processFrame, 80);
             })
             .catch(function(err) {
-                log('❌ Camera: ' + err.message, 'err');
+                log('❌ Camera error: ' + err.message, 'err');
                 resetToIdle();
             });
     }
@@ -748,7 +930,7 @@
         frameCount++;
         const now = Date.now();
         if (now - lastFrameTime >= 1000) {
-            document.getElementById('frameBadge').textContent = frameCount + ' frames';
+            document.getElementById('frameBadge').textContent = frameCount + ' fps';
             lastFrameTime = now;
         }
 
@@ -756,12 +938,17 @@
         if (result && result.data) {
             log('🎯 QR: ' + result.data.substring(0, 30), 'info');
             stopCamera();
+            
+            // Haptic vibration & sound
+            if (navigator.vibrate) navigator.vibrate([30, 40, 30]);
+            playBeepSound();
+
             handleQR(result.data);
         }
     }
 
     function stopCamera() {
-        clearInterval(scanInterval); scanInterval = null;
+        if (scanInterval) { clearInterval(scanInterval); scanInterval = null; }
         if (mediaStream) { mediaStream.getTracks().forEach(t => t.stop()); mediaStream = null; }
         document.getElementById('videoSection').classList.remove('active');
     }
@@ -774,8 +961,6 @@
         document.getElementById('btnText').textContent = 'Open Scanner';
     }
 
-    let mobileTimerInterval = null;
-
     function handleQR(payload) {
         const parts = payload.split(':');
         let mode = 'DEV';
@@ -786,20 +971,15 @@
         for (let i = 0; i < parts.length; i++) {
             if (parts[i] === 'DEV' || parts[i] === 'STOP') {
                 mode = parts[i];
-                if (parts[i+1] && !isNaN(parts[i+1])) {
-                    windowTime = parseInt(parts[i+1]);
-                }
-                if (parts[i+2] && !isNaN(parts[i+2])) {
-                    expiresAt = parseInt(parts[i+2]);
-                }
-                if (parts[i+3] && !isNaN(parts[i+3])) {
-                    windowDuration = parseInt(parts[i+3]);
-                }
+                if (parts[i+1] && !isNaN(parts[i+1])) windowTime = parseInt(parts[i+1]);
+                if (parts[i+2] && !isNaN(parts[i+2])) expiresAt = parseInt(parts[i+2]);
+                if (parts[i+3] && !isNaN(parts[i+3])) windowDuration = parseInt(parts[i+3]);
                 break;
             }
         }
 
         const code = generateAlphanumericCode(SECRET_KEY, mode + ":" + windowTime);
+        currentGeneratedCode = code;
         const isStop = mode === 'STOP';
 
         const codeA = document.getElementById('codeA');
@@ -809,11 +989,17 @@
         codeA.className = 'code-group animate-pop' + (isStop ? ' stop-mode' : '');
         codeB.className = 'code-group animate-pop' + (isStop ? ' stop-mode' : '');
 
-        document.getElementById('resultLabel').textContent = isStop ? '🔴 Shutdown PIN' : '🔵 Developer PIN';
+        const label = document.getElementById('resultLabel');
+        label.innerHTML = isStop 
+            ? '<i class="fa-solid fa-triangle-exclamation" style="color: var(--red);"></i><span style="color: var(--red);">Shutdown PIN</span>' 
+            : '<i class="fa-solid fa-shield-halved" style="color: var(--cyan);"></i><span>Developer PIN</span>';
 
         const status = document.getElementById('resultStatus');
         status.className = 'result-status success';
         status.innerHTML = '<span>✅</span><span>Enter this PIN on your PC</span>';
+
+        const copyBtn = document.getElementById('btnCopyCode');
+        if (copyBtn) copyBtn.style.display = 'inline-flex';
 
         log('✅ PIN: ' + code.substring(0,3) + '-' + code.substring(3), 'ok');
 
@@ -833,15 +1019,14 @@
         const val = document.getElementById('mobileTimerVal');
         const bar = document.getElementById('mobileTimerBar');
         const title = document.getElementById('mobileTimerTitle');
+        const pctEl = document.getElementById('mobileTimerPct');
         if (!wrap || !val || !bar) return;
 
         wrap.style.display = 'block';
-        const accentColor = isStop ? 'var(--red)' : 'var(--cyan)';
-        val.style.color = accentColor;
-        if (title) title.textContent = 'Code valid for';
+        wrap.className = 'mobile-timer-box animate-pop';
+        
+        if (title) title.textContent = 'CODE VALID FOR';
 
-        // Calculate expiration: if expiresAt timestamp was provided in QR payload, use that.
-        // Otherwise calculate based on window duration.
         const targetExpirySecs = expiresAt || ((windowTime + 1) * windowDuration);
 
         function updateTick() {
@@ -850,16 +1035,19 @@
             const pct = Math.max(0, Math.min(100, (remaining / windowDuration) * 100));
 
             val.textContent = remaining + 's';
+            if (pctEl) pctEl.textContent = Math.round(pct) + '%';
             bar.style.width = pct + '%';
 
             if (isStop) {
+                val.style.color = 'var(--red)';
                 bar.style.background = remaining <= 10
                     ? 'linear-gradient(90deg, #b91c1c, #7f1d1d)'
                     : 'linear-gradient(90deg, #ff4757, #ff6b81)';
             } else {
+                val.style.color = remaining <= 10 ? 'var(--red)' : 'var(--cyan)';
                 bar.style.background = remaining <= 10
                     ? 'linear-gradient(90deg, #ef4444, #dc2626)'
-                    : 'linear-gradient(90deg, #00d4ff, #0077ff)';
+                    : 'linear-gradient(90deg, #ff7a00, #00d4ff)';
             }
 
             if (remaining <= 0) {
@@ -868,11 +1056,11 @@
                 val.textContent = 'EXPIRED';
                 val.style.color = 'var(--red)';
                 bar.style.width = '0%';
-                if (title) title.textContent = 'Code expired';
+                if (title) title.textContent = 'CODE EXPIRED';
                 const status = document.getElementById('resultStatus');
                 if (status) {
                     status.className = 'result-status';
-                    status.innerHTML = '<span style="color: var(--red); font-weight: 700;">⚠️ Code expired — please scan again</span>';
+                    status.innerHTML = '<span style="color: var(--red); font-weight: 700;">⚠️ Code expired — please scan new QR</span>';
                 }
                 log('⚠️ PIN expired, please scan new QR code', 'err');
             }
@@ -880,6 +1068,17 @@
 
         updateTick();
         mobileTimerInterval = setInterval(updateTick, 1000);
+    }
+
+    function copyPinCode() {
+        if (!currentGeneratedCode) return;
+        navigator.clipboard.writeText(currentGeneratedCode).then(() => {
+            const btnText = document.getElementById('copyBtnText');
+            if (btnText) {
+                btnText.textContent = 'Copied! ✓';
+                setTimeout(() => { btnText.textContent = 'Copy PIN'; }, 2000);
+            }
+        });
     }
 </script>
 </body>
