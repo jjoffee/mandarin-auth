@@ -676,19 +676,18 @@
     });
 
     function generateAlphanumericCode(key, message) {
-        let hash = 0;
         const combined = key + ":" + message;
-        for (let i = 0; i < combined.length; i++) {
-            hash = ((hash << 5) - hash) + combined.charCodeAt(i);
-            hash |= 0;
-        }
-        let val = Math.abs(hash);
         const charset = "0123456789ABCDEFGHJKLMNPQRSTUVWXYZ";
-        let code = "";
-        for (let i = 0; i < 6; i++) {
-            code += charset[val % charset.length];
-            val = Math.floor(val / charset.length) + (i + 1) * 7;
+        let h1 = 5381, h2 = 5381;
+        for (let i = 0; i < combined.length; i++) {
+            const c = combined.charCodeAt(i);
+            h1 = ((h1 << 5) + h1) ^ c; h1 |= 0;
+            h2 = ((h2 << 5) + h2) ^ (c * 31 | 0); h2 |= 0;
         }
+        let v1 = Math.abs(h1), v2 = Math.abs(h2);
+        let code = "";
+        for (let i = 0; i < 3; i++) { code += charset[v1 % 34]; v1 = Math.floor(v1 / 34); }
+        for (let i = 0; i < 3; i++) { code += charset[v2 % 34]; v2 = Math.floor(v2 / 34); }
         return code;
     }
 
