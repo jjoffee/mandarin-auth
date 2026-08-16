@@ -46,7 +46,7 @@
             max-height: 100dvh;
             background: var(--bg);
             color: var(--text-main);
-            overflow: hidden; /* No scrolling */
+            overflow: hidden; /* Zero scroll */
             position: fixed;
             inset: 0;
         }
@@ -212,7 +212,7 @@
             backdrop-filter: blur(24px) saturate(190%);
             -webkit-backdrop-filter: blur(24px) saturate(190%);
             border: 1px solid var(--glass-border);
-            border-radius: 22px;
+            border-radius: 24px;
             overflow: hidden;
             box-shadow: 0 10px 30px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.15);
             display: flex;
@@ -221,21 +221,47 @@
             justify-content: center;
             flex-shrink: 1;
             min-height: 0;
+            position: relative;
         }
 
-        /* Video Area */
+        /* ── Square Video Section with Expansion Animation ── */
         .video-section {
             position: relative;
             width: 100%;
-            height: 24vh;
-            max-height: 220px;
+            max-width: 250px;
+            aspect-ratio: 1 / 1; /* PERFECT SQUARE SCANNER */
             background: #000;
             display: none;
             overflow: hidden;
+            border-radius: 20px;
+            margin: 8px auto;
+            box-shadow: 0 0 24px rgba(0, 212, 255, 0.25), inset 0 0 20px rgba(0,0,0,0.8);
+            border: 2px solid rgba(0, 212, 255, 0.35);
+        }
+
+        @keyframes scannerExpand {
+            0% {
+                transform: scale(0.25) rotate(-4deg);
+                opacity: 0;
+                filter: blur(12px);
+                clip-path: circle(10% at 50% 50%);
+            }
+            65% {
+                transform: scale(1.04) rotate(0deg);
+                opacity: 1;
+                filter: blur(0px);
+                clip-path: circle(75% at 50% 50%);
+            }
+            100% {
+                transform: scale(1) rotate(0deg);
+                opacity: 1;
+                clip-path: circle(100% at 50% 50%);
+            }
         }
 
         .video-section.active {
             display: block;
+            animation: scannerExpand 0.45s cubic-bezier(0.16, 1, 0.3, 1) forwards;
         }
 
         #webcamVideo {
@@ -245,7 +271,7 @@
             display: block;
         }
 
-        /* Viewfinder Overlay */
+        /* Square Viewfinder Overlay */
         .vf-overlay {
             position: absolute;
             inset: 0;
@@ -257,32 +283,38 @@
 
         .vf-frame {
             position: relative;
-            width: 60%;
-            height: 75%;
+            width: 72%;
+            aspect-ratio: 1 / 1; /* SQUARE FRAME */
+            animation: cornerExpand 0.4s 0.1s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+        }
+
+        @keyframes cornerExpand {
+            0% { transform: scale(0.6); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
         }
 
         .vf-corner {
             position: absolute;
-            width: 20px;
-            height: 20px;
+            width: 24px;
+            height: 24px;
             border-color: var(--cyan);
             border-style: solid;
-            filter: drop-shadow(0 0 5px var(--cyan));
+            filter: drop-shadow(0 0 6px var(--cyan));
         }
 
-        .vf-corner.tl { top: 0; left: 0; border-width: 3px 0 0 3px; border-radius: 5px 0 0 0; }
-        .vf-corner.tr { top: 0; right: 0; border-width: 3px 3px 0 0; border-radius: 0 5px 0 0; }
-        .vf-corner.bl { bottom: 0; left: 0; border-width: 0 0 3px 3px; border-radius: 0 0 0 5px; }
-        .vf-corner.br { bottom: 0; right: 0; border-width: 0 3px 3px 0; border-radius: 0 0 5px 0; }
+        .vf-corner.tl { top: 0; left: 0; border-width: 3.5px 0 0 3.5px; border-radius: 6px 0 0 0; }
+        .vf-corner.tr { top: 0; right: 0; border-width: 3.5px 3.5px 0 0; border-radius: 0 6px 0 0; }
+        .vf-corner.bl { bottom: 0; left: 0; border-width: 0 0 3.5px 3.5px; border-radius: 0 0 0 6px; }
+        .vf-corner.br { bottom: 0; right: 0; border-width: 0 3.5px 3.5px 0; border-radius: 0 0 6px 0; }
 
         .vf-scan-line {
             position: absolute;
             left: 4px;
             right: 4px;
-            height: 2px;
+            height: 2.5px;
             background: linear-gradient(90deg, transparent, #ff7a00, #00d4ff, transparent);
-            box-shadow: 0 0 10px #00d4ff;
-            animation: scanLineAnim 2s infinite ease-in-out;
+            box-shadow: 0 0 12px #00d4ff, 0 0 6px #ff7a00;
+            animation: scanLineAnim 1.8s infinite ease-in-out;
             top: 0;
         }
 
@@ -300,8 +332,8 @@
 
         .live-badge {
             position: absolute;
-            top: 10px;
-            left: 10px;
+            top: 8px;
+            left: 8px;
             display: flex;
             align-items: center;
             gap: 5px;
@@ -311,7 +343,7 @@
             border: 1px solid rgba(255,255,255,0.15);
             border-radius: 20px;
             padding: 3px 8px;
-            font-size: 9px;
+            font-size: 8.5px;
             font-weight: 800;
             color: var(--red);
             letter-spacing: 0.5px;
@@ -319,8 +351,8 @@
 
         .frame-badge {
             position: absolute;
-            top: 10px;
-            right: 10px;
+            top: 8px;
+            right: 8px;
             background: rgba(0,0,0,0.65);
             backdrop-filter: blur(8px);
             -webkit-backdrop-filter: blur(8px);
@@ -333,32 +365,50 @@
             font-weight: 700;
         }
 
+        .btn-close-cam {
+            position: absolute;
+            bottom: 8px;
+            right: 8px;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            background: rgba(0,0,0,0.7);
+            border: 1px solid rgba(255,255,255,0.2);
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            cursor: pointer;
+            backdrop-filter: blur(6px);
+        }
+
         /* ── Idle State ── */
         .idle-section {
-            padding: 18px 16px 12px;
+            padding: 16px 16px 10px;
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 10px;
+            gap: 8px;
         }
 
         .idle-icon-wrap {
-            width: 58px;
-            height: 58px;
+            width: 54px;
+            height: 54px;
             border-radius: 50%;
             background: radial-gradient(circle, rgba(255, 122, 0, 0.25) 0%, rgba(0, 212, 255, 0.1) 100%);
             border: 1px solid rgba(255, 122, 0, 0.4);
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 26px;
-            box-shadow: 0 0 18px var(--mandarin-glow);
+            font-size: 24px;
+            box-shadow: 0 0 16px var(--mandarin-glow);
             animation: idlePulse 3s infinite ease-in-out;
         }
 
         @keyframes idlePulse {
-            0%, 100% { transform: scale(1); box-shadow: 0 0 14px var(--mandarin-glow); }
-            50% { transform: scale(1.04); box-shadow: 0 0 24px var(--mandarin-glow); }
+            0%, 100% { transform: scale(1); box-shadow: 0 0 12px var(--mandarin-glow); }
+            50% { transform: scale(1.04); box-shadow: 0 0 22px var(--mandarin-glow); }
         }
 
         .idle-text {
@@ -366,7 +416,7 @@
         }
 
         .idle-title {
-            font-size: 15px;
+            font-size: 14.5px;
             font-weight: 800;
             color: #fff;
             margin-bottom: 2px;
@@ -374,7 +424,7 @@
         }
 
         .idle-subtitle {
-            font-size: 11.5px;
+            font-size: 11px;
             color: var(--text-dim);
             line-height: 1.3;
         }
@@ -386,13 +436,13 @@
             justify-content: center;
             gap: 8px;
             width: calc(100% - 24px);
-            margin: 0 12px 14px;
-            padding: 12px;
+            margin: 0 12px 12px;
+            padding: 11px;
             background: linear-gradient(135deg, #ff7a00 0%, #ff4757 50%, #0077ff 100%);
             border: 1px solid rgba(255, 255, 255, 0.25);
             border-radius: 14px;
             color: #fff;
-            font-size: 14.5px;
+            font-size: 14px;
             font-weight: 800;
             letter-spacing: 0.4px;
             cursor: pointer;
@@ -434,17 +484,17 @@
         }
 
         .result-inner {
-            padding: 14px 16px;
+            padding: 12px 14px;
             text-align: center;
         }
 
         .result-label {
-            font-size: 10px;
+            font-size: 9.5px;
             font-weight: 800;
             letter-spacing: 1.2px;
             text-transform: uppercase;
             color: var(--text-dim);
-            margin-bottom: 8px;
+            margin-bottom: 6px;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -456,26 +506,26 @@
             align-items: center;
             justify-content: center;
             gap: 6px;
-            margin-bottom: 8px;
+            margin-bottom: 6px;
         }
 
         .code-group {
             font-family: 'SF Mono', monospace;
-            font-size: 30px;
+            font-size: 28px;
             font-weight: 900;
             letter-spacing: 3px;
             color: var(--cyan);
             background: rgba(0, 212, 255, 0.08);
             border: 1px solid rgba(0, 212, 255, 0.3);
             border-radius: 12px;
-            padding: 6px 14px;
-            min-width: 90px;
+            padding: 5px 12px;
+            min-width: 86px;
             box-shadow: 0 4px 16px rgba(0, 212, 255, 0.12), inset 0 1px 0 rgba(255,255,255,0.15);
             transition: all 0.3s;
         }
 
         .code-sep {
-            font-size: 22px;
+            font-size: 20px;
             font-weight: 300;
             color: var(--text-muted);
         }
@@ -492,8 +542,8 @@
             background: rgba(0, 0, 0, 0.35);
             border: 1px solid rgba(255, 255, 255, 0.1);
             border-radius: 12px;
-            padding: 8px 12px;
-            margin: 8px 0 6px;
+            padding: 7px 12px;
+            margin: 6px 0 4px;
             box-shadow: inset 0 2px 6px rgba(0,0,0,0.3);
         }
 
@@ -501,8 +551,8 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 6px;
-            font-size: 10px;
+            margin-bottom: 5px;
+            font-size: 9.5px;
             font-weight: 700;
         }
 
@@ -516,12 +566,12 @@
 
         .timer-badge {
             font-family: 'SF Mono', monospace;
-            font-size: 12px;
+            font-size: 11.5px;
             font-weight: 900;
             color: var(--cyan);
             background: rgba(0, 212, 255, 0.12);
             border: 1px solid rgba(0, 212, 255, 0.3);
-            padding: 2px 7px;
+            padding: 2px 6px;
             border-radius: 6px;
         }
 
@@ -545,10 +595,10 @@
         }
 
         .result-status {
-            font-size: 11.5px;
+            font-size: 11px;
             color: var(--text-dim);
             line-height: 1.3;
-            margin-top: 4px;
+            margin-top: 3px;
         }
 
         .result-status.success {
@@ -565,15 +615,15 @@
             background: rgba(255, 255, 255, 0.06);
             border: 1px solid var(--glass-border);
             color: #fff;
-            padding: 5px 12px;
-            border-radius: 10px;
-            font-size: 10.5px;
+            padding: 4px 10px;
+            border-radius: 8px;
+            font-size: 10px;
             font-weight: 700;
             cursor: pointer;
             display: inline-flex;
             align-items: center;
-            gap: 5px;
-            margin-top: 6px;
+            gap: 4px;
+            margin-top: 4px;
         }
 
         .copy-btn:active {
@@ -589,7 +639,7 @@
             -webkit-backdrop-filter: blur(16px);
             border: 1px solid var(--glass-border);
             border-radius: 14px;
-            padding: 6px 10px;
+            padding: 5px 10px;
             display: flex;
             align-items: center;
             justify-content: space-around;
@@ -601,18 +651,18 @@
             display: flex;
             align-items: center;
             gap: 5px;
-            font-size: 10px;
+            font-size: 9.5px;
             color: var(--text-dim);
             font-weight: 600;
         }
 
         .flow-num {
-            width: 17px;
-            height: 17px;
+            width: 16px;
+            height: 16px;
             border-radius: 50%;
             background: rgba(0, 212, 255, 0.15);
             color: var(--cyan);
-            font-size: 9.5px;
+            font-size: 9px;
             font-weight: 900;
             display: flex;
             align-items: center;
@@ -662,7 +712,7 @@
     <!-- Glass Scan Card -->
     <div class="scan-card" id="scanCard">
 
-        <!-- Live Camera Viewfinder -->
+        <!-- Square Live Camera Viewfinder with Expansion Animation -->
         <div class="video-section" id="videoSection">
             <video id="webcamVideo" playsinline webkit-playsinline autoplay muted></video>
             <canvas id="scanCanvas"></canvas>
@@ -680,9 +730,10 @@
 
             <div class="live-badge">
                 <div class="status-dot" style="background: var(--red); box-shadow: 0 0 6px var(--red);"></div>
-                LIVE SCAN
+                LIVE
             </div>
             <div class="frame-badge" id="frameBadge">0 fps</div>
+            <div class="btn-close-cam" onclick="resetToIdle()"><i class="fa-solid fa-xmark"></i></div>
         </div>
 
         <!-- Idle State -->
@@ -803,7 +854,12 @@
     function startLiveCamera() {
         document.getElementById('btnScan').classList.add('hidden');
         document.getElementById('idleSection').style.display = 'none';
-        document.getElementById('videoSection').classList.add('active');
+        
+        const vidSec = document.getElementById('videoSection');
+        vidSec.classList.remove('active');
+        void vidSec.offsetWidth; // Trigger reflow for animation
+        vidSec.classList.add('active');
+
         document.getElementById('resultStatus').textContent = 'Scanning…';
 
         if (typeof jsQR !== 'function') {
