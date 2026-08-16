@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="theme-color" content="#060a14">
@@ -16,6 +16,7 @@
             padding: 0;
             -webkit-tap-highlight-color: transparent;
             font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', Roboto, sans-serif;
+            user-select: none;
         }
 
         :root {
@@ -34,28 +35,27 @@
             --glass-bg: rgba(13, 20, 38, 0.65);
             --glass-card: rgba(18, 27, 49, 0.7);
             --glass-border: rgba(255, 255, 255, 0.12);
-            --glass-border-glow: rgba(0, 212, 255, 0.3);
-            --safe-top: env(safe-area-inset-top, 20px);
-            --safe-bottom: env(safe-area-inset-bottom, 20px);
+            --safe-top: env(safe-area-inset-top, 12px);
+            --safe-bottom: env(safe-area-inset-bottom, 12px);
         }
 
         html, body {
             width: 100%;
-            min-height: 100vh;
-            min-height: 100dvh;
+            height: 100vh;
+            height: 100dvh;
+            max-height: 100dvh;
             background: var(--bg);
             color: var(--text-main);
-            overflow-x: hidden;
+            overflow: hidden; /* No scrolling */
+            position: fixed;
+            inset: 0;
         }
 
         body {
             display: flex;
             flex-direction: column;
-            min-height: 100vh;
-            min-height: 100dvh;
             padding-top: var(--safe-top);
             padding-bottom: var(--safe-bottom);
-            position: relative;
         }
 
         /* ── Ambient Glowing Glass Blobs ── */
@@ -69,29 +69,22 @@
         .glow-orb-1 {
             position: absolute;
             top: -10%;
-            left: 10%;
-            width: 320px;
-            height: 320px;
+            left: 5%;
+            width: 280px;
+            height: 280px;
             border-radius: 50%;
             background: radial-gradient(circle, rgba(255, 122, 0, 0.18) 0%, rgba(255, 122, 0, 0) 70%);
             filter: blur(50px);
-            animation: orbFloat 8s infinite ease-in-out alternate;
         }
         .glow-orb-2 {
             position: absolute;
-            bottom: 5%;
-            right: 5%;
-            width: 360px;
-            height: 360px;
+            bottom: -5%;
+            right: 0%;
+            width: 300px;
+            height: 300px;
             border-radius: 50%;
             background: radial-gradient(circle, rgba(0, 212, 255, 0.16) 0%, rgba(0, 212, 255, 0) 70%);
-            filter: blur(60px);
-            animation: orbFloat 10s infinite ease-in-out alternate-reverse;
-        }
-
-        @keyframes orbFloat {
-            0% { transform: translate(0, 0) scale(1); }
-            100% { transform: translate(25px, 25px) scale(1.1); }
+            filter: blur(50px);
         }
 
         .page-content {
@@ -101,11 +94,15 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            padding: 16px 16px 28px;
-            gap: 16px;
-            max-width: 480px;
+            justify-content: space-between;
+            padding: 8px 12px;
+            gap: 8px;
+            max-width: 440px;
             margin: 0 auto;
             width: 100%;
+            height: 100%;
+            max-height: 100%;
+            overflow: hidden;
         }
 
         /* ── Glass Header ── */
@@ -118,27 +115,28 @@
             backdrop-filter: blur(20px) saturate(180%);
             -webkit-backdrop-filter: blur(20px) saturate(180%);
             border: 1px solid var(--glass-border);
-            border-radius: 20px;
-            padding: 10px 14px;
-            box-shadow: 0 8px 32px rgba(0,0,0,0.35);
+            border-radius: 16px;
+            padding: 8px 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+            flex-shrink: 0;
         }
 
         .brand {
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 8px;
         }
 
         .brand-icon {
-            width: 40px;
-            height: 40px;
+            width: 32px;
+            height: 32px;
             background: linear-gradient(135deg, #ff7a00, #ff4757);
-            border-radius: 12px;
+            border-radius: 10px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 22px;
-            box-shadow: 0 4px 16px var(--mandarin-glow);
+            font-size: 17px;
+            box-shadow: 0 2px 10px var(--mandarin-glow);
             border: 1px solid rgba(255, 255, 255, 0.25);
             position: relative;
             overflow: hidden;
@@ -152,7 +150,7 @@
             right: 0;
             height: 50%;
             background: linear-gradient(180deg, rgba(255,255,255,0.35) 0%, transparent 100%);
-            border-radius: 12px 12px 0 0;
+            border-radius: 10px 10px 0 0;
         }
 
         .brand-text {
@@ -161,19 +159,20 @@
         }
 
         .brand-name {
-            font-size: 15px;
+            font-size: 13.5px;
             font-weight: 900;
             color: #fff;
-            letter-spacing: 0.8px;
+            letter-spacing: 0.6px;
             background: linear-gradient(135deg, #fff 40%, #ff9f43 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
+            line-height: 1.1;
         }
 
         .brand-sub {
-            font-size: 9.5px;
+            font-size: 8.5px;
             color: var(--text-dim);
-            letter-spacing: 1.2px;
+            letter-spacing: 1px;
             text-transform: uppercase;
             font-weight: 700;
         }
@@ -181,24 +180,23 @@
         .status-pill {
             display: flex;
             align-items: center;
-            gap: 6px;
+            gap: 5px;
             background: rgba(0, 229, 160, 0.12);
             border: 1px solid rgba(0, 229, 160, 0.3);
             border-radius: 20px;
-            padding: 5px 12px;
-            font-size: 10.5px;
+            padding: 4px 9px;
+            font-size: 9.5px;
             font-weight: 800;
             color: var(--green);
-            letter-spacing: 0.6px;
-            box-shadow: 0 2px 10px rgba(0, 229, 160, 0.15);
+            letter-spacing: 0.5px;
         }
 
         .status-dot {
-            width: 7px;
-            height: 7px;
+            width: 6px;
+            height: 6px;
             border-radius: 50%;
             background: var(--green);
-            box-shadow: 0 0 8px var(--green);
+            box-shadow: 0 0 6px var(--green);
             animation: blink 2s infinite;
         }
 
@@ -214,17 +212,23 @@
             backdrop-filter: blur(24px) saturate(190%);
             -webkit-backdrop-filter: blur(24px) saturate(190%);
             border: 1px solid var(--glass-border);
-            border-radius: 28px;
+            border-radius: 22px;
             overflow: hidden;
-            box-shadow: 0 16px 40px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.15);
-            position: relative;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.15);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 1;
+            min-height: 0;
         }
 
         /* Video Area */
         .video-section {
             position: relative;
             width: 100%;
-            aspect-ratio: 1 / 1;
+            height: 24vh;
+            max-height: 220px;
             background: #000;
             display: none;
             overflow: hidden;
@@ -253,39 +257,39 @@
 
         .vf-frame {
             position: relative;
-            width: 68%;
-            aspect-ratio: 1;
+            width: 60%;
+            height: 75%;
         }
 
         .vf-corner {
             position: absolute;
-            width: 26px;
-            height: 26px;
+            width: 20px;
+            height: 20px;
             border-color: var(--cyan);
             border-style: solid;
-            filter: drop-shadow(0 0 6px var(--cyan));
+            filter: drop-shadow(0 0 5px var(--cyan));
         }
 
-        .vf-corner.tl { top: 0; left: 0; border-width: 3.5px 0 0 3.5px; border-radius: 6px 0 0 0; }
-        .vf-corner.tr { top: 0; right: 0; border-width: 3.5px 3.5px 0 0; border-radius: 0 6px 0 0; }
-        .vf-corner.bl { bottom: 0; left: 0; border-width: 0 0 3.5px 3.5px; border-radius: 0 0 0 6px; }
-        .vf-corner.br { bottom: 0; right: 0; border-width: 0 3.5px 3.5px 0; border-radius: 0 0 6px 0; }
+        .vf-corner.tl { top: 0; left: 0; border-width: 3px 0 0 3px; border-radius: 5px 0 0 0; }
+        .vf-corner.tr { top: 0; right: 0; border-width: 3px 3px 0 0; border-radius: 0 5px 0 0; }
+        .vf-corner.bl { bottom: 0; left: 0; border-width: 0 0 3px 3px; border-radius: 0 0 0 5px; }
+        .vf-corner.br { bottom: 0; right: 0; border-width: 0 3px 3px 0; border-radius: 0 0 5px 0; }
 
         .vf-scan-line {
             position: absolute;
-            left: 6px;
-            right: 6px;
-            height: 2.5px;
+            left: 4px;
+            right: 4px;
+            height: 2px;
             background: linear-gradient(90deg, transparent, #ff7a00, #00d4ff, transparent);
-            box-shadow: 0 0 12px #00d4ff, 0 0 6px #ff7a00;
+            box-shadow: 0 0 10px #00d4ff;
             animation: scanLineAnim 2s infinite ease-in-out;
             top: 0;
         }
 
         @keyframes scanLineAnim {
-            0% { top: 6px; opacity: 1; }
-            90% { top: calc(100% - 6px); opacity: 1; }
-            100% { top: calc(100% - 6px); opacity: 0; }
+            0% { top: 4px; opacity: 1; }
+            90% { top: calc(100% - 4px); opacity: 1; }
+            100% { top: calc(100% - 4px); opacity: 0; }
         }
 
         .vf-bg {
@@ -296,18 +300,18 @@
 
         .live-badge {
             position: absolute;
-            top: 14px;
-            left: 14px;
+            top: 10px;
+            left: 10px;
             display: flex;
             align-items: center;
-            gap: 6px;
+            gap: 5px;
             background: rgba(0,0,0,0.65);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
             border: 1px solid rgba(255,255,255,0.15);
             border-radius: 20px;
-            padding: 4px 10px;
-            font-size: 10px;
+            padding: 3px 8px;
+            font-size: 9px;
             font-weight: 800;
             color: var(--red);
             letter-spacing: 0.5px;
@@ -315,15 +319,15 @@
 
         .frame-badge {
             position: absolute;
-            top: 14px;
-            right: 14px;
+            top: 10px;
+            right: 10px;
             background: rgba(0,0,0,0.65);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
             border: 1px solid rgba(255,255,255,0.12);
-            border-radius: 10px;
-            padding: 4px 9px;
-            font-size: 9.5px;
+            border-radius: 8px;
+            padding: 3px 7px;
+            font-size: 8.5px;
             font-family: 'SF Mono', monospace;
             color: var(--cyan);
             font-weight: 700;
@@ -331,31 +335,30 @@
 
         /* ── Idle State ── */
         .idle-section {
-            padding: 38px 24px 30px;
+            padding: 18px 16px 12px;
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 18px;
+            gap: 10px;
         }
 
         .idle-icon-wrap {
-            width: 86px;
-            height: 86px;
+            width: 58px;
+            height: 58px;
             border-radius: 50%;
             background: radial-gradient(circle, rgba(255, 122, 0, 0.25) 0%, rgba(0, 212, 255, 0.1) 100%);
             border: 1px solid rgba(255, 122, 0, 0.4);
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 38px;
-            box-shadow: 0 0 24px var(--mandarin-glow);
+            font-size: 26px;
+            box-shadow: 0 0 18px var(--mandarin-glow);
             animation: idlePulse 3s infinite ease-in-out;
-            position: relative;
         }
 
         @keyframes idlePulse {
-            0%, 100% { transform: scale(1); box-shadow: 0 0 20px var(--mandarin-glow); }
-            50% { transform: scale(1.05); box-shadow: 0 0 32px var(--mandarin-glow), 0 0 16px var(--cyan-glow); }
+            0%, 100% { transform: scale(1); box-shadow: 0 0 14px var(--mandarin-glow); }
+            50% { transform: scale(1.04); box-shadow: 0 0 24px var(--mandarin-glow); }
         }
 
         .idle-text {
@@ -363,18 +366,17 @@
         }
 
         .idle-title {
-            font-size: 18px;
+            font-size: 15px;
             font-weight: 800;
             color: #fff;
-            margin-bottom: 6px;
-            letter-spacing: 0.3px;
+            margin-bottom: 2px;
+            letter-spacing: 0.2px;
         }
 
         .idle-subtitle {
-            font-size: 13px;
+            font-size: 11.5px;
             color: var(--text-dim);
-            line-height: 1.5;
-            max-width: 280px;
+            line-height: 1.3;
         }
 
         /* ── Action Scan Button ── */
@@ -382,22 +384,23 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 10px;
-            width: calc(100% - 32px);
-            margin: 0 16px 20px;
-            padding: 16px;
+            gap: 8px;
+            width: calc(100% - 24px);
+            margin: 0 12px 14px;
+            padding: 12px;
             background: linear-gradient(135deg, #ff7a00 0%, #ff4757 50%, #0077ff 100%);
             border: 1px solid rgba(255, 255, 255, 0.25);
-            border-radius: 18px;
+            border-radius: 14px;
             color: #fff;
-            font-size: 16px;
+            font-size: 14.5px;
             font-weight: 800;
-            letter-spacing: 0.5px;
+            letter-spacing: 0.4px;
             cursor: pointer;
-            box-shadow: 0 8px 28px var(--mandarin-glow);
+            box-shadow: 0 6px 20px var(--mandarin-glow);
             transition: all 0.2s;
             position: relative;
             overflow: hidden;
+            flex-shrink: 0;
         }
 
         .scan-btn::before {
@@ -408,12 +411,11 @@
             right: 0;
             height: 50%;
             background: linear-gradient(180deg, rgba(255,255,255,0.25) 0%, transparent 100%);
-            border-radius: 18px 18px 0 0;
+            border-radius: 14px 14px 0 0;
         }
 
         .scan-btn:active {
             transform: scale(0.97);
-            box-shadow: 0 4px 16px var(--mandarin-glow);
         }
 
         .scan-btn.hidden { display: none; }
@@ -425,54 +427,55 @@
             backdrop-filter: blur(24px) saturate(190%);
             -webkit-backdrop-filter: blur(24px) saturate(190%);
             border: 1px solid var(--glass-border);
-            border-radius: 28px;
+            border-radius: 22px;
             overflow: hidden;
-            box-shadow: 0 16px 40px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.15);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.15);
+            flex-shrink: 0;
         }
 
         .result-inner {
-            padding: 24px 20px;
+            padding: 14px 16px;
             text-align: center;
         }
 
         .result-label {
-            font-size: 11px;
+            font-size: 10px;
             font-weight: 800;
-            letter-spacing: 1.5px;
+            letter-spacing: 1.2px;
             text-transform: uppercase;
             color: var(--text-dim);
-            margin-bottom: 14px;
+            margin-bottom: 8px;
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 6px;
+            gap: 5px;
         }
 
         .code-wrap {
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 8px;
-            margin-bottom: 12px;
+            gap: 6px;
+            margin-bottom: 8px;
         }
 
         .code-group {
-            font-family: 'SF Mono', 'Fira Code', 'Courier New', monospace;
-            font-size: 38px;
+            font-family: 'SF Mono', monospace;
+            font-size: 30px;
             font-weight: 900;
-            letter-spacing: 4px;
+            letter-spacing: 3px;
             color: var(--cyan);
             background: rgba(0, 212, 255, 0.08);
             border: 1px solid rgba(0, 212, 255, 0.3);
-            border-radius: 16px;
-            padding: 10px 18px;
-            min-width: 110px;
-            box-shadow: 0 4px 20px rgba(0, 212, 255, 0.15), inset 0 1px 0 rgba(255,255,255,0.15);
+            border-radius: 12px;
+            padding: 6px 14px;
+            min-width: 90px;
+            box-shadow: 0 4px 16px rgba(0, 212, 255, 0.12), inset 0 1px 0 rgba(255,255,255,0.15);
             transition: all 0.3s;
         }
 
         .code-sep {
-            font-size: 28px;
+            font-size: 22px;
             font-weight: 300;
             color: var(--text-muted);
         }
@@ -481,16 +484,16 @@
             color: var(--red);
             background: rgba(255, 71, 87, 0.08);
             border-color: rgba(255, 71, 87, 0.3);
-            box-shadow: 0 4px 20px rgba(255, 71, 87, 0.2);
+            box-shadow: 0 4px 16px rgba(255, 71, 87, 0.2);
         }
 
-        /* ── Dynamic Live Timer Component on Mobile ── */
+        /* ── Dynamic Live Timer (No Percentages) ── */
         .mobile-timer-box {
             background: rgba(0, 0, 0, 0.35);
             border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 16px;
-            padding: 12px 16px;
-            margin: 14px 0 12px;
+            border-radius: 12px;
+            padding: 8px 12px;
+            margin: 8px 0 6px;
             box-shadow: inset 0 2px 6px rgba(0,0,0,0.3);
         }
 
@@ -498,8 +501,8 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 8px;
-            font-size: 11px;
+            margin-bottom: 6px;
+            font-size: 10px;
             font-weight: 700;
         }
 
@@ -507,24 +510,24 @@
             color: var(--text-dim);
             display: flex;
             align-items: center;
-            gap: 6px;
+            gap: 5px;
             letter-spacing: 0.3px;
         }
 
         .timer-badge {
             font-family: 'SF Mono', monospace;
-            font-size: 13px;
+            font-size: 12px;
             font-weight: 900;
             color: var(--cyan);
             background: rgba(0, 212, 255, 0.12);
             border: 1px solid rgba(0, 212, 255, 0.3);
-            padding: 2px 8px;
-            border-radius: 8px;
+            padding: 2px 7px;
+            border-radius: 6px;
         }
 
         .timer-bar-track {
             width: 100%;
-            height: 8px;
+            height: 6px;
             background: rgba(255, 255, 255, 0.06);
             border-radius: 20px;
             overflow: hidden;
@@ -538,30 +541,21 @@
             background: linear-gradient(90deg, #ff7a00, #00d4ff);
             border-radius: 20px;
             transition: width 0.3s linear;
-            box-shadow: 0 0 10px rgba(0, 212, 255, 0.5);
-        }
-
-        .timer-footer-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-top: 6px;
-            font-size: 10px;
-            color: var(--text-dim);
+            box-shadow: 0 0 8px rgba(0, 212, 255, 0.5);
         }
 
         .result-status {
-            font-size: 13px;
+            font-size: 11.5px;
             color: var(--text-dim);
-            line-height: 1.5;
-            margin-top: 8px;
+            line-height: 1.3;
+            margin-top: 4px;
         }
 
         .result-status.success {
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 6px;
+            gap: 5px;
             color: var(--green);
             font-weight: 700;
         }
@@ -571,16 +565,15 @@
             background: rgba(255, 255, 255, 0.06);
             border: 1px solid var(--glass-border);
             color: #fff;
-            padding: 7px 16px;
-            border-radius: 12px;
-            font-size: 11px;
+            padding: 5px 12px;
+            border-radius: 10px;
+            font-size: 10.5px;
             font-weight: 700;
             cursor: pointer;
             display: inline-flex;
             align-items: center;
-            gap: 6px;
-            margin-top: 10px;
-            transition: all 0.2s;
+            gap: 5px;
+            margin-top: 6px;
         }
 
         .copy-btn:active {
@@ -588,99 +581,56 @@
             transform: scale(0.96);
         }
 
-        /* ── Glass Step Tiles ── */
-        .instructions {
+        /* ── Compact Glass Flow Steps Bar (Zero Scroll) ── */
+        .flow-bar {
             width: 100%;
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 10px;
-        }
-
-        .step-tile {
             background: var(--glass-bg);
             backdrop-filter: blur(16px);
             -webkit-backdrop-filter: blur(16px);
             border: 1px solid var(--glass-border);
-            border-radius: 18px;
-            padding: 14px 10px;
-            text-align: center;
+            border-radius: 14px;
+            padding: 6px 10px;
             display: flex;
-            flex-direction: column;
             align-items: center;
-            gap: 6px;
-            box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+            justify-content: space-around;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.25);
+            flex-shrink: 0;
         }
 
-        .step-num {
-            width: 24px;
-            height: 24px;
+        .flow-step {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 10px;
+            color: var(--text-dim);
+            font-weight: 600;
+        }
+
+        .flow-num {
+            width: 17px;
+            height: 17px;
             border-radius: 50%;
-            background: linear-gradient(135deg, rgba(255,122,0,0.3), rgba(0,212,255,0.3));
-            border: 1px solid rgba(255,255,255,0.2);
-            font-size: 11px;
+            background: rgba(0, 212, 255, 0.15);
+            color: var(--cyan);
+            font-size: 9.5px;
             font-weight: 900;
-            color: #fff;
             display: flex;
             align-items: center;
             justify-content: center;
         }
 
-        .step-text {
-            font-size: 10.5px;
-            color: var(--text-dim);
-            line-height: 1.4;
-            font-weight: 600;
+        .flow-arrow {
+            color: var(--text-muted);
+            font-size: 8px;
         }
-
-        /* ── Log Panel ── */
-        .log-panel {
-            width: 100%;
-            background: var(--glass-bg);
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
-            border: 1px solid var(--glass-border);
-            border-radius: 18px;
-            overflow: hidden;
-            box-shadow: 0 8px 24px rgba(0,0,0,0.3);
-        }
-
-        .log-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 10px 14px;
-            border-bottom: 1px solid var(--glass-border);
-            font-size: 10px;
-            font-weight: 800;
-            letter-spacing: 1px;
-            text-transform: uppercase;
-            color: var(--text-dim);
-        }
-
-        .log-body {
-            padding: 10px 14px;
-            font-size: 10.5px;
-            font-family: 'SF Mono', monospace;
-            color: var(--text-dim);
-            max-height: 80px;
-            overflow-y: auto;
-            line-height: 1.7;
-            scrollbar-width: none;
-        }
-        .log-body::-webkit-scrollbar { display: none; }
-
-        .log-line.ok { color: var(--green); }
-        .log-line.err { color: var(--red); }
-        .log-line.info { color: var(--cyan); }
-        .log-line.dim { color: var(--text-muted); }
 
         /* Animation */
         @keyframes successPop {
-            0% { transform: scale(0.85); opacity: 0; }
-            60% { transform: scale(1.05); }
+            0% { transform: scale(0.88); opacity: 0; }
+            60% { transform: scale(1.04); }
             100% { transform: scale(1); opacity: 1; }
         }
-        .animate-pop { animation: successPop 0.35s ease forwards; }
+        .animate-pop { animation: successPop 0.3s ease forwards; }
 
         canvas { display: none; }
     </style>
@@ -705,7 +655,7 @@
         </div>
         <div class="status-pill">
             <div class="status-dot"></div>
-            AIR-GAPPED 2FA
+            AIR-GAPPED
         </div>
     </header>
 
@@ -739,8 +689,8 @@
         <div class="idle-section" id="idleSection">
             <div class="idle-icon-wrap">📷</div>
             <div class="idle-text">
-                <div class="idle-title">Scan Dynamic QR Code</div>
-                <div class="idle-subtitle">Point camera at the challenge QR code on your PC screen</div>
+                <div class="idle-title">Scan Challenge QR</div>
+                <div class="idle-subtitle">Aim camera at PC screen code</div>
             </div>
         </div>
 
@@ -765,7 +715,7 @@
                 <div class="code-group" id="codeB">---</div>
             </div>
 
-            <!-- Dynamic Live Expiration Time Bar on Mobile -->
+            <!-- Dynamic Live Expiration Time Bar (No percentages) -->
             <div id="mobileCountdownWrap" class="mobile-timer-box" style="display: none;">
                 <div class="timer-header-row">
                     <div class="timer-title">
@@ -789,33 +739,21 @@
         </div>
     </div>
 
-    <!-- Glass Step Tiles -->
-    <div class="instructions">
-        <div class="step-tile">
-            <div class="step-num">1</div>
-            <div class="step-text">Open Scanner</div>
+    <!-- Compact Glass Workflow Bar -->
+    <div class="flow-bar">
+        <div class="flow-step">
+            <div class="flow-num">1</div>
+            <span>Scan</span>
         </div>
-        <div class="step-tile">
-            <div class="step-num">2</div>
-            <div class="step-text">Scan PC QR</div>
+        <div class="flow-arrow"><i class="fa-solid fa-chevron-right"></i></div>
+        <div class="flow-step">
+            <div class="flow-num">2</div>
+            <span>Get PIN</span>
         </div>
-        <div class="step-tile">
-            <div class="step-num">3</div>
-            <div class="step-text">Enter PIN on PC</div>
-        </div>
-    </div>
-
-    <!-- System Log Panel -->
-    <div class="log-panel">
-        <div class="log-header">
-            <div style="display: flex; align-items: center; gap: 6px;">
-                <span style="width: 6px; height: 6px; border-radius: 50%; background: var(--cyan);"></span>
-                <span>System Security Log</span>
-            </div>
-            <span style="font-family: monospace; font-size: 9px; color: var(--text-muted);">TOTP v2</span>
-        </div>
-        <div class="log-body" id="logBody">
-            <div class="log-line dim">▶ Mandarin Auth Engine initialized</div>
+        <div class="flow-arrow"><i class="fa-solid fa-chevron-right"></i></div>
+        <div class="flow-step">
+            <div class="flow-num">3</div>
+            <span>Enter on PC</span>
         </div>
     </div>
 
@@ -830,39 +768,21 @@
     let mobileTimerInterval = null;
     let currentGeneratedCode = '';
 
-    function log(msg, type = '') {
-        const lb = document.getElementById('logBody');
-        if (!lb) return;
-        const line = document.createElement('div');
-        line.className = 'log-line ' + type;
-        line.textContent = msg;
-        lb.appendChild(line);
-        lb.scrollTop = lb.scrollHeight;
-    }
-
     function playBeepSound() {
         try {
             const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
             const osc = audioCtx.createOscillator();
             const gain = audioCtx.createGain();
             osc.type = 'sine';
-            osc.frequency.setValueAtTime(880, audioCtx.currentTime); // A5
-            gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
-            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.12);
+            osc.frequency.setValueAtTime(880, audioCtx.currentTime);
+            gain.gain.setValueAtTime(0.12, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
             osc.connect(gain);
             gain.connect(audioCtx.destination);
             osc.start();
-            osc.stop(audioCtx.currentTime + 0.12);
+            osc.stop(audioCtx.currentTime + 0.1);
         } catch(e) {}
     }
-
-    window.addEventListener('load', function() {
-        if (typeof jsQR === 'function') {
-            log('✅ jsQR engine ready', 'ok');
-        } else {
-            log('❌ jsQR engine missing', 'err');
-        }
-    });
 
     function generateAlphanumericCode(key, message) {
         const combined = key + ":" + message;
@@ -885,10 +805,8 @@
         document.getElementById('idleSection').style.display = 'none';
         document.getElementById('videoSection').classList.add('active');
         document.getElementById('resultStatus').textContent = 'Scanning…';
-        log('▶ Opening camera…', 'info');
 
         if (typeof jsQR !== 'function') {
-            log('❌ jsQR not available', 'err');
             resetToIdle();
             return;
         }
@@ -902,11 +820,9 @@
                 video.play();
                 frameCount = 0;
                 lastFrameTime = Date.now();
-                log('✅ Camera stream active', 'ok');
                 scanInterval = setInterval(processFrame, 80);
             })
             .catch(function(err) {
-                log('❌ Camera error: ' + err.message, 'err');
                 resetToIdle();
             });
     }
@@ -931,13 +847,9 @@
 
         const result = jsQR(imgData.data, imgData.width, imgData.height, { inversionAttempts: "attemptBoth" });
         if (result && result.data) {
-            log('🎯 QR: ' + result.data.substring(0, 30), 'info');
             stopCamera();
-            
-            // Haptic vibration & sound
             if (navigator.vibrate) navigator.vibrate([30, 40, 30]);
             playBeepSound();
-
             handleQR(result.data);
         }
     }
@@ -991,12 +903,10 @@
 
         const status = document.getElementById('resultStatus');
         status.className = 'result-status success';
-        status.innerHTML = '<span>✅</span><span>Enter this PIN on your PC</span>';
+        status.innerHTML = '<span>✅</span><span>Enter PIN on PC</span>';
 
         const copyBtn = document.getElementById('btnCopyCode');
         if (copyBtn) copyBtn.style.display = 'inline-flex';
-
-        log('✅ PIN: ' + code.substring(0,3) + '-' + code.substring(3), 'ok');
 
         // Start mobile countdown timer with remaining time
         startMobileTimer(expiresAt, windowTime, windowDuration, isStop);
@@ -1053,9 +963,8 @@
                 const status = document.getElementById('resultStatus');
                 if (status) {
                     status.className = 'result-status';
-                    status.innerHTML = '<span style="color: var(--red); font-weight: 700;">⚠️ Code expired — please scan new QR</span>';
+                    status.innerHTML = '<span style="color: var(--red); font-weight: 700;">⚠️ Code expired — scan new QR</span>';
                 }
-                log('⚠️ PIN expired, please scan new QR code', 'err');
             }
         }
 
