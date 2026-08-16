@@ -778,11 +778,6 @@
                 <div class="timer-bar-track">
                     <div id="mobileTimerBar" class="timer-bar-fill"></div>
                 </div>
-
-                <div class="timer-footer-row">
-                    <span>Syncs with PC cycle</span>
-                    <span id="mobileTimerPct" style="font-family: monospace; font-weight: 700; color: var(--cyan);">100%</span>
-                </div>
             </div>
 
             <div class="result-status" id="resultStatus">Awaiting scan…</div>
@@ -1019,7 +1014,6 @@
         const val = document.getElementById('mobileTimerVal');
         const bar = document.getElementById('mobileTimerBar');
         const title = document.getElementById('mobileTimerTitle');
-        const pctEl = document.getElementById('mobileTimerPct');
         if (!wrap || !val || !bar) return;
 
         wrap.style.display = 'block';
@@ -1035,7 +1029,6 @@
             const pct = Math.max(0, Math.min(100, (remaining / windowDuration) * 100));
 
             val.textContent = remaining + 's';
-            if (pctEl) pctEl.textContent = Math.round(pct) + '%';
             bar.style.width = pct + '%';
 
             if (isStop) {
