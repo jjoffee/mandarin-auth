@@ -618,6 +618,18 @@
                 <div class="code-sep">-</div>
                 <div class="code-group" id="codeB">---</div>
             </div>
+            <!-- Dynamic Countdown Timer Badge & Progress Bar on Mobile -->
+            <div id="mobileCountdownWrap" style="display: none; margin: 10px 0 12px; background: rgba(0,0,0,0.25); padding: 10px 14px; border-radius: 12px; border: 1px solid var(--border);">
+                <div style="display: flex; justify-content: space-between; align-items: center; font-size: 11px; margin-bottom: 6px; font-weight: 700;">
+                    <span style="color: var(--text-dim); display: flex; align-items: center; gap: 5px;">
+                        <span>⏱️</span> <span id="mobileTimerTitle">Code valid for</span>
+                    </span>
+                    <span id="mobileTimerVal" style="font-family: 'SF Mono', monospace; color: var(--cyan); font-size: 13px; font-weight: 800;">60s</span>
+                </div>
+                <div style="width: 100%; height: 6px; background: rgba(255,255,255,0.08); border-radius: 10px; overflow: hidden;">
+                    <div id="mobileTimerBar" style="height: 100%; width: 100%; background: linear-gradient(90deg, var(--cyan), #0066ee); border-radius: 10px; transition: width 0.3s linear;"></div>
+                </div>
+            </div>
             <div class="result-status" id="resultStatus">Awaiting scan…</div>
         </div>
     </div>
@@ -762,15 +774,27 @@
         document.getElementById('btnText').textContent = 'Open Scanner';
     }
 
+    let mobileTimerInterval = null;
+
     function handleQR(payload) {
         const parts = payload.split(':');
         let mode = 'DEV';
-        let windowTime = Math.floor(Date.now() / 1000 / 30);
+        let windowTime = Math.floor(Date.now() / 1000 / 60);
+        let expiresAt = null;
+        let windowDuration = 60;
 
         for (let i = 0; i < parts.length; i++) {
             if (parts[i] === 'DEV' || parts[i] === 'STOP') {
                 mode = parts[i];
-                if (parts[i+1] && !isNaN(parts[i+1])) windowTime = parseInt(parts[i+1]);
+                if (parts[i+1] && !isNaN(parts[i+1])) {
+                    windowTime = parseInt(parts[i+1]);
+                }
+                if (parts[i+2] && !isNaN(parts[i+2])) {
+                    expiresAt = parseInt(parts[i+2]);
+                }
+                if (parts[i+3] && !isNaN(parts[i+3])) {
+                    windowDuration = parseInt(parts[i+3]);
+                }
                 break;
             }
         }
@@ -793,11 +817,69 @@
 
         log('✅ PIN: ' + code.substring(0,3) + '-' + code.substring(3), 'ok');
 
+        // Start mobile countdown timer with remaining time
+        startMobileTimer(expiresAt, windowTime, windowDuration, isStop);
+
         // Reset scan button
         document.getElementById('idleSection').style.display = 'flex';
         const btn = document.getElementById('btnScan');
         btn.classList.remove('hidden');
         document.getElementById('btnText').textContent = 'Scan Again';
+    }
+
+    function startMobileTimer(expiresAt, windowTime, windowDuration, isStop) {
+        if (mobileTimerInterval) clearInterval(mobileTimerInterval);
+        const wrap = document.getElementById('mobileCountdownWrap');
+        const val = document.getElementById('mobileTimerVal');
+        const bar = document.getElementById('mobileTimerBar');
+        const title = document.getElementById('mobileTimerTitle');
+        if (!wrap || !val || !bar) return;
+
+        wrap.style.display = 'block';
+        const accentColor = isStop ? 'var(--red)' : 'var(--cyan)';
+        val.style.color = accentColor;
+        if (title) title.textContent = 'Code valid for';
+
+        // Calculate expiration: if expiresAt timestamp was provided in QR payload, use that.
+        // Otherwise calculate based on window duration.
+        const targetExpirySecs = expiresAt || ((windowTime + 1) * windowDuration);
+
+        function updateTick() {
+            const nowSecs = Math.floor(Date.now() / 1000);
+            const remaining = Math.max(0, targetExpirySecs - nowSecs);
+            const pct = Math.max(0, Math.min(100, (remaining / windowDuration) * 100));
+
+            val.textContent = remaining + 's';
+            bar.style.width = pct + '%';
+
+            if (isStop) {
+                bar.style.background = remaining <= 10
+                    ? 'linear-gradient(90deg, #b91c1c, #7f1d1d)'
+                    : 'linear-gradient(90deg, #ff4757, #ff6b81)';
+            } else {
+                bar.style.background = remaining <= 10
+                    ? 'linear-gradient(90deg, #ef4444, #dc2626)'
+                    : 'linear-gradient(90deg, #00d4ff, #0077ff)';
+            }
+
+            if (remaining <= 0) {
+                clearInterval(mobileTimerInterval);
+                mobileTimerInterval = null;
+                val.textContent = 'EXPIRED';
+                val.style.color = 'var(--red)';
+                bar.style.width = '0%';
+                if (title) title.textContent = 'Code expired';
+                const status = document.getElementById('resultStatus');
+                if (status) {
+                    status.className = 'result-status';
+                    status.innerHTML = '<span style="color: var(--red); font-weight: 700;">⚠️ Code expired — please scan again</span>';
+                }
+                log('⚠️ PIN expired, please scan new QR code', 'err');
+            }
+        }
+
+        updateTick();
+        mobileTimerInterval = setInterval(updateTick, 1000);
     }
 </script>
 </body>
